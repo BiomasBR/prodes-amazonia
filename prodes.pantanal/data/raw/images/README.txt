@@ -1,1 +1,0 @@
-This folder is intended for storing the Data Cubes created by SITS.

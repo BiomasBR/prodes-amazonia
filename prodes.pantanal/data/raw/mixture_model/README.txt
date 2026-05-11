@@ -1,1 +1,0 @@
-This folder is intended for storing the Linear Spectral Mixture Model created in the script 1_SITS_mixture_model.
