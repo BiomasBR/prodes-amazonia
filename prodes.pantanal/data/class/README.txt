@@ -1,1 +1,0 @@
-This folder is intended for storing the Classification created in the script 4_SITS_classification.
