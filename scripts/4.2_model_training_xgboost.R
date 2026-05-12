@@ -15,6 +15,11 @@ tiles      <- str_split(str_extract(time_series_name, "(?<=tiles_)[^_]+"), "-")[
 start_date <- stringr::str_split_i(time_series_name, "_", 4)
 end_date   <- stringr::str_split_i(time_series_name, "_", 5)
 
+# Calculate the number of years in the training cube
+no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
+tiles_train <- paste(sort(tiles), collapse = "-")
+no.cubes <- paste0(length(tiles_train), "t")
+
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
   
@@ -83,41 +88,22 @@ plots_dir <- file.path(plots_path, var)
 dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ============================================================
-# 1. Define and Load Data Cubes
+# 1. Import training data
 # ============================================================
 
-# Step 1.1 -- Create a training cube from a collection
-cube <- sits_cube(
-  source      = "BDC",
-  collection  = "SENTINEL-2-16D",
-  bands       = c('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B11', 'B12', 'NDVI', 'NBR', 'EVI', 'CLOUD'),
-  tiles       = tiles,
-  start_date  = start_date,
-  end_date    = end_date,
-  progress    = TRUE)
-
-# Step 1.2 -- Calculate the number of years in the training cube
-no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
-tiles_train <- paste(sort(tiles), collapse = "-")
-no.cubes <- paste0(length(cube$tile), "t")
-
-# ============================================================
-# 2. Import training data
-# ============================================================
-
-# Step 2.1 -- Reading training samples
+# Step 1.1 -- Reading training samples
 train_samples <- readRDS(time_series_path)
 
-# Step 2.2 -- Load color palette from external config file
+# Step 1.2 -- Load color palette from external config file
 config     <- read_class_config(file.path(config_dir, "class_config.txt"))
 my_colors  <- config$my_colors
 my_colors  <- my_colors[names(my_colors) %in% unique(train_samples$label)]
 
 # ============================================================
-# 3. Training and saving model
+# 2. Training and saving model
 # ============================================================
 
-# Step 3.1 -- Set random seed to ensure reproducibility
+# Step 2.1 -- Set random seed to ensure reproducibility
 set.seed(88)
 
 # Record start time of the hyperparameter tuning process
@@ -162,12 +148,12 @@ tunned_model <- tunned_model |>
     dplyr::across(learning_rate:verbose, ~ unlist(.x))
   )
 
-# Step 3.2 -- Build confusion matrix as a tibble
+# Step 2.2 -- Build confusion matrix as a tibble
 matriz_conf_xbb_model <- tibble::tibble(
   as.data.frame(tunned_model$acc[[1]]$table)
 )
 
-# Step 3.3 -- Plot confusion matrix
+# Step 2.3 -- Plot confusion matrix
 ggplot(matriz_conf_xbb_model, aes(x = Reference, y = Prediction, fill = Freq)) +
   geom_tile(color = "white") +
   geom_text(aes(label = Freq), size = 4) +
@@ -195,25 +181,25 @@ ggplot(matriz_conf_xbb_model, aes(x = Reference, y = Prediction, fill = Freq)) +
     plot.title = element_text(hjust = 0.5)
   )
 
-# Step 3.4 -- Train final model using best hyperparameters
+# Step 2.4 -- Train final model using best hyperparameters
 xgb_model <- sits_train(
   samples = train_samples,
   ml_method = sits_xgboost(
-    learning_rate = tunned_model$learning_rate[1],
-    min_split_los = tunned_model$min_split_loss[1], # NOTE: check typo (min_split_los vs min_split_loss)
-    max_depth = tunned_model$max_depth[1],
-    min_child_weight = tunned_model$min_child_weight[1],
-    subsample = 1,
-    nrounds = tunned_model$nrounds[1],
-    nthread = 28,
-    verbose = TRUE
+  learning_rate = tunned_model$learning_rate[1],
+  min_split_loss = tunned_model$min_split_loss[1],
+  max_depth = tunned_model$max_depth[1],
+  min_child_weight = tunned_model$min_child_weight[1],
+  subsample = 1,
+  nrounds = tunned_model$nrounds[1],
+  nthread = 28,
+  verbose = TRUE
   )
 )
 
-# Step 3.4.1 -- Plot feature importance of the trained model
+# Step 2.4.1 -- Plot feature importance of the trained model
 plot(xgb_model)
 
-# Step 3.4.2 -- Save the generated plot
+# Step 2.4.2 -- Save the generated plot
 ggsave(
   filename = paste0(
     process_version, "_", tiles_train, "_", no.years, var,
@@ -227,7 +213,7 @@ ggsave(
   dpi = 350
 )
 
-# Step 3.5 -- Save trained model to disk (RDS format)
+# Step 2.5 -- Save trained model to disk (RDS format)
 saveRDS(
   xgb_model,
   paste0(
@@ -235,39 +221,41 @@ saveRDS(
     length(cube$tile), "-tiles-", tiles_train, "_",
     no.years, "-period-",
     cube_dates[1], "_", cube_dates[length(cube_dates)],
-    "_", var, "_", process_version, ".rds"
-  )
-)
+    "_", var, "_", process_version, ".rds"))
+
 print("Model trained successfully!")
 
 # ============================================================
-# Step 4 -- Save model parameters to txt
+# Step 3 -- Save model parameters to txt
 # ============================================================
 
 # Folder: same as the model RDS
 model_dir <- file.path(rds_path, "model/xgboost/")
 dir.create(model_dir, showWarnings = FALSE, recursive = TRUE)
 
-# File name uses var (same as model)
+# File name uses same pattern as model
 params_filename <- paste0(
   "XGB-parameters_",
-  length(cube$tile), "-tiles-", tiles_train, "_",
+  length(tiles), "-tiles-", tiles_train, "_",
   no.years, "-period-",
-  cube_dates[1], "_", cube_dates[length(cube_dates)],
+  start_date, "_", end_date,
   "_", var, "_", process_version, ".txt"
 )
 
+# Parameters used in training
 params_lines <- c(
   "# ============================================================",
   "# XGBoost Model Parameters",
   "# ============================================================",
+  "",
+  "# --- General information ---",
   paste0("process_version     : ", process_version),
   paste0("var                 : ", var),
   paste0("tiles               : ", tiles_train),
-  paste0("period              : ", no.years),
+  paste0("period_years        : ", no.years),
+  paste0("number_of_tiles     : ", length(tiles)),
   paste0("start_date          : ", start_date),
   paste0("end_date            : ", end_date),
-  paste0("time_series_file    : ", time_series_name),
   "",
   "# --- Tuning settings ---",
   paste0("trials              : ", 30),
@@ -285,15 +273,28 @@ params_lines <- c(
   "",
   "# --- Tuning duration ---",
   paste0("tuning_time_sec     : ", round(sits_xgb_model_fine_tuning_time, 1)),
-  sprintf("tuning_time_hhmm    : %02d:%02d",
-          as.integer(sits_xgb_model_fine_tuning_time / 3600),
-          as.integer((sits_xgb_model_fine_tuning_time %% 3600) / 60)
+  sprintf(
+    "tuning_time_hhmm    : %02d:%02d",
+    as.integer(sits_xgb_model_fine_tuning_time / 3600),
+    as.integer((sits_xgb_model_fine_tuning_time %% 3600) / 60)
   ),
   "",
   "# --- Accuracy (best trial) ---",
-  paste0("overall_accuracy    : ", round(tunned_model$acc[[1]]$overall["Accuracy"], 4)),
-  paste0("kappa               : ", round(tunned_model$acc[[1]]$overall["Kappa"], 4))
+  paste0(
+    "overall_accuracy    : ",
+    round(tunned_model$acc[[1]]$overall["Accuracy"], 4)
+  ),
+  paste0(
+    "kappa               : ",
+    round(tunned_model$acc[[1]]$overall["Kappa"], 4)
+  ),
+  "",
+  "# --- Execution info ---",
+  paste0("training_datetime   : ", Sys.time())
 )
-
-writeLines(params_lines, file.path(model_dir, params_filename))
+# Save txt file
+writeLines(
+  params_lines,
+  file.path(model_dir, params_filename)
+)
 message("Parameters saved: ", params_filename)

@@ -1,5 +1,5 @@
 # ============================================================
-# Train a Lightweight Temporal Self-Attention Encoder
+# Train a Temporal Convolution Neural Network
 # ============================================================
 
 # Load required libraries
@@ -167,33 +167,62 @@ ggplot2::ggsave(
 # 2. Training and saving model
 # ============================================================
 
-# Step 2.1 -- Train LTAE-based model using training samples
-tuned_ltae <- sits_lighttae(
+# Step 2.1 -- Set random seed to ensure reproducibility
+set.seed(88)
+
+# Step 2.2 -- Train TempCNN model using training samples
+tempcnn_model <- sits_train(
   samples = train_samples,
-  epochs = 150L,
-  batch_size = 128L,
-  validation_split = 0.2,
-  optimizer = torch::optim_adamw,
-  opt_hparams = list(lr = 5e-04, eps = 1e-08, weight_decay = 7e-04),
-  lr_decay_epochs = 50L,
-  lr_decay_rate = 1,
-  patience = 20L,
-  min_delta = 0.01,
-  seed = NULL,
-  verbose = FALSE,
-  multicores = 24,    # parallel execution
-  progress = TRUE     # display progress
+  ml_method = sits_tempcnn(
+    
+    # Convolutional layers configuration
+    cnn_layers = c(64, 64, 64),              # number of filters per layer
+    cnn_kernels = c(3, 3, 3),                # kernel size for each convolution
+    cnn_dropout_rates = c(0.2, 0.2, 0.2),    # dropout rate to reduce overfitting
+    
+    # Fully connected (dense) layer configuration
+    dense_layer_nodes = 256,                 # number of neurons in dense layer
+    dense_layer_dropout_rate = 0.5,          # dropout for dense layer
+    
+    # Training configuration
+    epochs = 150,                            # number of training epochs
+    batch_size = 1024,                       # batch size for training
+    validation_split = 0.2,                  # proportion of data used for validation
+    
+    # Optimizer configuration (AdamW)
+    optimizer = torch::optim_adamw,
+    opt_hparams = list(
+      lr = 5e-04,                            # learning rate
+      eps = 1e-08,                           # numerical stability term
+      weight_decay = 1e-06                   # L2 regularization
+    ),
+    
+    # Learning rate scheduling
+    lr_decay_epochs = 1,                     # frequency of decay (in epochs)
+    lr_decay_rate = 0.95,                    # decay factor
+    
+    # Early stopping configuration
+    patience = 20,                           # epochs to wait without improvement
+    min_delta = 0.01,                        # minimum improvement threshold
+    verbose = FALSE                          # disable training logs
+  )
 )
 
-# Step 2.2 -- Save tuned model object to disk (RDS format)
+# Step 2.2.1 -- Plot model diagnostics (e.g., training history or feature relevance)
+plot(tempcnn_model)
+
+# Step 2.3 -- Save trained model to disk (RDS format)
 saveRDS(
-  tuned_ltae,
+  tempcnn_model,
   paste0(
-    rds_path, "model/ltae/", "LTAE-model_",
-    length(cube$tile), "-tiles-", tiles_train, "_",
-    no.years, "-period-",
-    cube_dates[1], "_", cube_dates[length(cube_dates)],
-    "_", var, "_", process_version, ".rds"))
+    rds_path, "model/temp_cnn/",
+    paste(
+      "tcnn-model",
+      length(tiles),
+      tiles_train, no.years,
+      start_date, end_date,
+      var, process_version,sep = "_"),
+    ".rds"))
 
 print("Model trained successfully!")
 
@@ -202,57 +231,61 @@ print("Model trained successfully!")
 # ============================================================
 
 # Folder: same as the model RDS
-model_dir <- file.path(rds_path, "model/ltae/")
+model_dir <- file.path(rds_path, "model/temp_cnn/")
 dir.create(model_dir, showWarnings = FALSE, recursive = TRUE)
 
 # File name uses same pattern as model
 params_filename <- paste0(
-  "LTAE-parameters_",
-  length(cube$tile), "-tiles-", tiles_train, "_",
+  "TCNN-parameters_",
+  length(tiles), "-tiles-", tiles_train, "_",
   no.years, "-period-",
-  cube_dates[1], "_", cube_dates[length(cube_dates)],
+  start_date, "_", end_date,
   "_", var, "_", process_version, ".txt"
 )
 
 # Parameters used in training
 params_lines <- c(
   "# ============================================================",
-  "# LTAE Model Parameters",
+  "# TempCNN Model Parameters",
   "# ============================================================",
   "",
   "# --- General information ---",
   paste0("process_version         : ", process_version),
   paste0("var                     : ", var),
   paste0("tiles                   : ", tiles_train),
-  paste0("number_of_tiles         : ", length(cube$tile)),
   paste0("period_years            : ", no.years),
-  paste0("start_date              : ", cube_dates[1]),
-  paste0("end_date                : ", cube_dates[length(cube_dates)]),
+  paste0("number_of_tiles         : ", length(tiles)),
+  paste0("start_date              : ", start_date),
+  paste0("end_date                : ", end_date),
+  "",
+  "# --- CNN architecture ---",
+  paste0("cnn_layers              : ", paste(c(64, 64, 64), collapse = ", ")),
+  paste0("cnn_kernels             : ", paste(c(3, 3, 3), collapse = ", ")),
+  paste0("cnn_dropout_rates       : ", paste(c(0.2, 0.2, 0.2), collapse = ", ")),
+  "",
+  "# --- Dense layer ---",
+  paste0("dense_layer_nodes       : ", 256),
+  paste0("dense_dropout_rate      : ", 0.5),
   "",
   "# --- Training configuration ---",
-  paste0("epochs                  : ", 150L),
-  paste0("batch_size              : ", 128L),
+  paste0("epochs                  : ", 150),
+  paste0("batch_size              : ", 1024),
   paste0("validation_split        : ", 0.2),
+  paste0("random_seed             : ", 88),
   "",
   "# --- Optimizer (AdamW) ---",
   paste0("optimizer               : AdamW"),
   paste0("learning_rate           : ", 5e-04),
   paste0("eps                     : ", 1e-08),
-  paste0("weight_decay            : ", 7e-04),
+  paste0("weight_decay            : ", 1e-06),
   "",
   "# --- Learning rate decay ---",
-  paste0("lr_decay_epochs         : ", 50L),
-  paste0("lr_decay_rate           : ", 1),
+  paste0("lr_decay_epochs         : ", 1),
+  paste0("lr_decay_rate           : ", 0.95),
   "",
   "# --- Early stopping ---",
-  paste0("patience                : ", 20L),
+  paste0("patience                : ", 20),
   paste0("min_delta               : ", 0.01),
-  "",
-  "# --- Execution ---",
-  paste0("multicores              : ", 24),
-  paste0("progress                : ", TRUE),
-  paste0("verbose                 : ", FALSE),
-  paste0("seed                    : ", "NULL"),
   "",
   "# --- Execution info ---",
   paste0("training_datetime       : ", Sys.time())
