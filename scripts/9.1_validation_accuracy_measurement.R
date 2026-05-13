@@ -14,8 +14,8 @@ library(segmetric)
 library(openxlsx)
 
 # Define the parameters: These are user-defined variables
-tiles      = '000000'
-model_name <- "rf-model_2t_014002-015002_2y_2023-07-28_2025-07-28_com-nuvens-cheias_2026-04-07_14h45m.rds"
+tiles      = '012014'
+model_name <- "rf-model_4t_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_new-deforestation_2026-05-07_09h38m.rds"
 
 # Extract the date of the string separated by "_"
 start_date <- stringr::str_split_i(model_name, "_", 5)
@@ -45,7 +45,7 @@ plots_dir <- file.path(plots_path, version)
 dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
 # List of validation sample files matching the version pattern in the samples directory
-pattern <- paste0(".*", tiles, ".*", ".*", version, ".*\\.gpkg$")
+pattern <- paste0(".*", tiles, ".*", version, ".*\\.gpkg$")
 
 samples_validation_list <- dir(
   samples_dir,
@@ -196,20 +196,20 @@ cube <- sits_cube(
   source = "BDC",
   collection = "SENTINEL-2-16D",
   bands = "class",
-  labels = c("1"  = "Burn_Scar", # List the classes according to each number sequence in your raster
-             "2"  = "Lake",
-             "3"  = "River",
-             "4"  = "Clearing_For_Agriculture",
-             "5"  = "Previous_Clearing_For_Agriculture",
-             "6"  = "Clearing_For_Bare_Soil",
-             "7"  = "Previous_Clearing_For_Bare_Soil",
-             "8"  = "Herbaceous_Dry_High_Biomass",
-             "9"  = "Herbaceous_Dry_Low_Biomass",
-             "10" = "Herbaceous_Dry_Post_Fire",
-             "11" = "Herbaceous_Wet",
-             "12" = "Woodland",
-             "13" = "Ecotone",
-             "14" = "Palm_Swamps"),
+  labels = c("1"  = "Wetland", # List the classes according to the number sequence in which they appear in your raster
+             "2"  = "Water",
+             "3"  = "Forest",
+             "4"  = "Transition_Forest",
+             "5"  = "Non_Forest_Natural_Vegetation",
+             "6"  = "Degradation",
+             "7"  = "Degradation_Fire",
+             "8"  = "Clear_Cut_Bare_Soil",
+             "9"  = "Clear_Cut_Vegetation",
+             "10" = "Clear_Cut_Burned_Area",
+             "11" = "Clear_Cut_Trees",
+             "12" = "Previous_Clear_Cut_Bare_Soil",
+             "13" = "Previous_Clear_Cut_Vegetation"
+             ),
   tiles =  tiles,
   start_date = start_date,
   end_date = end_date,
@@ -252,10 +252,10 @@ class_cube <- sits_cube(
   source = "BDC",
   collection = "SENTINEL-2-16D",
   bands = "class",
-  labels = c("15" = "Deforestation",  # list the grouped classes according to each number they appear in raster 
-             "16" = "Water", 
-             "17" = "Grassland",
-             "18" = "Forest"),
+  labels = c("14" = "Deforestation",
+             "15" = "Degradation",
+             "16" = "Other_Classes",
+             ),
   tiles =  tiles,
   start_date = start_date,
   end_date = end_date,
@@ -288,57 +288,3 @@ plot_accuracy(
   plots_dir = plots_dir,
   prefix    = "prodes-acc"
 )
-
-# ============================================================
-# 3. Intersect Over Union
-# ============================================================
-pol_ref_path <- list.files("data/raw/samples/prodes-2025",
-                           pattern = sprintf(".*%s*.", tiles),
-                           full.names = TRUE)
-
-#Read prodes polygons
-pol_ref <- read_sf(pol_ref_path)
-
-pattern <- paste0("sits-classification.*", tile, ".*\\.gpkg$")
-pol_class_path <- list.files(path = class_dir,
-                             pattern = pattern,
-                             full.names = TRUE,
-                             recursive = TRUE)
-
-#Read post-processed sits polygons
-pol_class <- read_sf(pol_class_path)
-
-#create segmetric object
-seg_obj <- sm_read(ref_sf = pol_ref,
-                   seg_sf = pol_class)
-
-#Compute metrics
-metricas <- sm_compute(seg_obj, "OS2") %>%
-  sm_compute("US2") %>%
-  sm_compute("AFI") %>%
-  sm_compute("D_index") %>%
-  sm_compute("precision") %>%
-  sm_compute("recall") %>%
-  sm_compute("M") %>%
-  sm_compute("IoU") %>%
-  sm_compute("Dice")
-
-metricas_names <- names(metricas)
-
-resumo_metricas <- createWorkbook()
-addWorksheet(resumo_metricas, tiles)
-
-r_df <- data.frame()
-
-for(i in seq(length(metricas))){
-  r <- prodes_avaliation(metricas[[i]])
-  row.names(r) <- metricas_names[i]
-  r_df <- rbind(r_df, r)
-}
-
-writeData(resumo_metricas, nome_seg, r_df, rowNames = TRUE)
-
-path <- file.path(dirname(pol_class_path),
-                  sprintf("metricas_%s.xlsx", tiles))
-
-saveWorkbook(resumo_metricas, path, overwrite = TRUE)
