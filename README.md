@@ -16,7 +16,7 @@ To use the scripts in this repository, clone the project to
 your local machine using the command below:
 
 ``` sh
-git clone https://github.com/migualex/sits-prodes
+git clone https://github.com/BiomasBR/prodes-amazonia.git
 ```
 
 After cloning, open the sits-prodes directory in RStudio and install the
