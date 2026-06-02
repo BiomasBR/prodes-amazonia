@@ -101,7 +101,7 @@ version <- paste(model_type, no.years, var, sep = "-")
 class_prob <- sits_classify(
   data        = local_segs_cube,
   ml_model    = model,
-  multicores  = 1,  # adapt to your computer CPU core availability
+  multicores  = 28,  # adapt to your computer CPU core availability
   memsize     = 180, # adapt to your computer memory availability
   output_dir  = tile_period_dir,
   version     = version,
