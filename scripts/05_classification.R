@@ -216,7 +216,7 @@ compute_uncertainty_raster <- function(
 # Step 3.1 -- Run function to calculate entropy, rasterize and exclude .gpkg
 compute_uncertainty_raster(
   vector_cube     = vector_cube,
-  tile_period_dir = class_path,
+  tile_period_dir = tile_period_dir,
   version         = version,
   multicores      = 28, # adapt to your computer CPU core availability
   memsize         = 180, # adapt to your computer CPU core availability
