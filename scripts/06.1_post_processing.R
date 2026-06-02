@@ -16,9 +16,10 @@ library(smoothr)
 
 # Step 1.2 -- Define paths for files and folders
 tile            <- "012014"
-version         <- "rf-1y-all-samples-new-pol-avg-false-menos-amostras-desmat"
-class_path      <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.amz/data/class"
-mask_path       <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.amz/data/raw/auxiliary/mask_geral_amz_v2024.gpkg" #nome da máscara em gpkg geral
+version         <- "rf-1y-all-samples-new-pol-avg-false-final-seg"
+class_path      <- "data/class"
+mask_path       <- "data/raw/auxiliary/mask_geral_amz_v2024.gpkg" #nome da máscara em gpkg geral
+config_dir      <- ".."
 
 # Step 1.3 -- define raw classification path and load the file
 raw_class_path <- list.files(class_path,
@@ -40,7 +41,58 @@ dir.create(post_class_path,
 # . Translation Stage
 # ============================================================
 
- raw_class$class <- ifelse(
+read_class_config <- function(config_file = "class_config.txt") {
+  
+  if (!file.exists(config_file)) {
+    stop(paste("Configuration file not found:", config_file))
+  }
+  
+  lines <- readLines(config_file, encoding = "UTF-8", warn = FALSE)
+  
+  # Remove empty lines and comments
+  lines <- trimws(lines)
+  lines <- lines[nchar(lines) > 0 & !startsWith(lines, "#")]
+  
+  # Identify sections and populate lists
+  current_section  <- NULL
+  class_trans_list <- list()
+  colors_list      <- list()
+  
+  for (line in lines) {
+    if (startsWith(line, "[") && endsWith(line, "]")) {
+      current_section <- gsub("\\[|\\]", "", line)
+      next
+    }
+    
+    if (!is.null(current_section) && grepl("=", line)) {
+      parts <- strsplit(line, "=", fixed = TRUE)[[1]]
+      key   <- trimws(parts[1])
+      value <- trimws(paste(parts[-1], collapse = "=")) # preserves '=' in hex codes
+      
+      if (current_section == "CLASS_TRANSLATION") {
+        class_trans_list[[key]] <- value
+      } else if (current_section == "COLORS") {
+        colors_list[[key]] <- value
+      }
+    }
+  }
+  
+  class_translation <- unlist(class_trans_list)
+  my_colors         <- unlist(colors_list)
+  
+  message(sprintf("Config loaded: %d class translations | %d colors",
+                  length(class_translation), length(my_colors)))
+  
+  return(list(
+    class_translation = class_translation,
+    my_colors         = my_colors
+  ))
+}
+
+config     <- read_class_config(file.path(config_dir, "class_config.txt"))
+class_translation <- config$class_translation
+
+raw_class$class <- ifelse(
        raw_class$class %in% names(class_translation),
        class_translation[raw_class$class],
        raw_class$class
@@ -419,7 +471,7 @@ class_diff_mask_2 <- sf::st_difference(
 # 10. Remove polygons outside the biome border
 # ============================================================
 
-biome <- read_sf("~/grupos/biomasbr/amazonia/sits-prodes/prodes.amz/data/raw/auxiliary/borders/amazon-biome-border-epsg10857.gpkg") |>
+biome <- read_sf("data/raw/auxiliary/borders/amazon-biome-border-epsg10857.gpkg") |>
   st_make_valid() |>
   st_transform(st_crs(class_diff_mask_2))
 
