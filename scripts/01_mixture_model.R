@@ -19,7 +19,7 @@ end_date   = '2025-07-31'
 cube <- sits_cube(
   source     = "BDC",
   collection = "SENTINEL-2-16D",
-  bands      = c('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B11', 'B12', 'CLOUD'),
+  bands      = c('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B11', 'B12'),
   tiles      = tiles,
   start_date = start_date,
   end_date   = end_date,
