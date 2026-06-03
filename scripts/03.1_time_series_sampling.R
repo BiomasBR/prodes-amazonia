@@ -68,12 +68,8 @@ read_class_config <- function(config_file = "class_config.txt") {
 sample_path   <- "data/raw/samples"
 ts_path       <- "data/rds/time_series/"
 mixture_path  <- "data/raw/mixture_model"
-plots_path    <- "data/plots/"
+plots_dir    <- "data/plots/time_series"
 config_dir    <- ".."
-
-# Plots organized by var
-plots_dir <- file.path(plots_path, var)
-dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ============================================================
 # 1. Define and Load Data Cubes

@@ -33,16 +33,12 @@ model_path       <- file.path("data/rds/model", models[model_type], model_name)
 model            <- readRDS(model_path)
 class_dir        <- "data/class"
 samples_dir      <- "data/raw/samples/validation_samples"
-plots_path       <- "data/plots"
+plots_dir       <- "data/plots/accuracy"
 mask_dir         <- "data/raw/auxiliary/masks"
 version          <- paste(stringr::str_split_i(model_name, "-", 1),
                           stringr::str_split_i(model_name, "_", 4),
                           stringr::str_split_i(model_name, "_", 7),
                           sep = "-")
-
-# Plots organized by version
-plots_dir <- file.path(plots_path, version)
-dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
 # List of validation sample files matching the version pattern in the samples directory
 pattern <- paste0(".*", tiles, ".*", version, ".*\\.gpkg$")
@@ -52,20 +48,6 @@ samples_validation_list <- dir(
   pattern = pattern,
   full.names = TRUE
 )
-
-prodes_avaliation <- function(x){
-  data.frame(
-    t(
-      c(
-        Mínimo = format(min(x, na.rm = TRUE), digits = 3),
-        Máximo = format(max(x, na.rm = TRUE), digits = 3),
-        Média  = format(mean(x, na.rm = TRUE), digits = 3),
-        Mediana = format(median(x, na.rm = TRUE), digits = 3),
-        Desvio_Padrão = format(sd(x, na.rm = TRUE), digits = 3)
-      )
-    )
-  )
-}
 
 # Plotting function
 plot_accuracy <- function(acc, version, tile, plots_dir, prefix) {
@@ -188,39 +170,40 @@ plot_accuracy <- function(acc, version, tile, plots_dir, prefix) {
 # Step 1.1 -- Get labels associated to the trained model data set (Enumerate them in the order they appear according to "sits_labels(model)")
 pattern <- paste0(".*", tiles, ".*", version, ".*\\.tif$")
 
-cube_dirs <- list.dirs(class_dir, recursive = TRUE) |> 
-  purrr::keep(~ length(list.files(.x, pattern = pattern)) > 0)
+cube_dirs <- grep("accuracy",
+                  list.dirs(class_dir, recursive = TRUE) |> 
+                    purrr::keep(~ length(list.files(.x, pattern = pattern)) > 0),
+                  value = TRUE)
+
+labels <- c(
+  x = sits_labels(model)
+)
+names(labels) <- 1:length(labels)
 
 # Step 1.2 -- Retrieve local cube of Full Map classified
-cube <- sits_cube(
+cube_list <- map(cube_dirs, function(dir) {
+sits_cube(
   source = "BDC",
   collection = "SENTINEL-2-16D",
   bands = "class",
-  labels = c("1"  = "Wetland", # List the classes according to the number sequence in which they appear in your raster
-             "2"  = "Water",
-             "3"  = "Forest",
-             "4"  = "Transition_Forest",
-             "5"  = "Non_Forest_Natural_Vegetation",
-             "6"  = "Degradation",
-             "7"  = "Degradation_Fire",
-             "8"  = "Clear_Cut_Bare_Soil",
-             "9"  = "Clear_Cut_Vegetation",
-             "10" = "Clear_Cut_Burned_Area",
-             "11" = "Clear_Cut_Trees",
-             "12" = "Previous_Clear_Cut_Bare_Soil",
-             "13" = "Previous_Clear_Cut_Vegetation"
-             ),
+  labels = labels,
   tiles =  tiles,
   start_date = start_date,
   end_date = end_date,
   version = version,
-  data_dir = cube_dirs,
+  data_dir = dir,
   parse_info = c("satellite", "sensor", "tile", "start_date", "end_date", 
                  "band", "version"))
 
+})
+
+# 2. Combine the list of tibbles into a single multi-row sits cube
+cube <- do.call(rbind, cube_list)
+
 # Step 1.2 -- Get validation samples points (in geographical coordinates - lat/long)
-samples_validation <- st_read(grep(".*_all-classes_*.",
-                                   samples_validation_list, value = TRUE))
+samples_validation <- read_sf(grep(".*_all-classes_*.",
+                                   samples_validation_list,
+                                   value = TRUE))
 
 # Step 1.3 -- Calculate accuracy
 full_map_acc <- sits_accuracy(cube,
@@ -246,27 +229,37 @@ plot_accuracy(
 # ============================================================
 # 2. Accuracy assessment of PRODES Adjusted Map classified
 # ============================================================
+cube_dirs <- grep("prodes",
+                  list.dirs(class_dir, recursive = TRUE) |> 
+                    purrr::keep(~ length(list.files(.x, pattern = pattern)) > 0),
+                  value = TRUE)
 
 # Step 2.1 -- Retrieve local cube of PRODES adjusted map classified
-class_cube <- sits_cube(
+cube_list <- map(cube_dirs, function(dir) {
+sits_cube(
   source = "BDC",
   collection = "SENTINEL-2-16D",
   bands = "class",
-  labels = c("14" = "Deforestation",
-             "15" = "Degradation",
-             "16" = "Other_Classes",
+  labels = c("13" = "Deforestation",
+             "14" = "Degradation",
+             "15" = "Other_Classes"
              ),
   tiles =  tiles,
   start_date = start_date,
   end_date = end_date,
-  version = paste0(version, "-mosaic"),
-  data_dir = cube_dirs,
+  version = paste("prodes-degradation", version, sep = "-"),
+  data_dir = dir,
   parse_info = c("satellite", "sensor", "tile", "start_date", "end_date", 
                  "band", "version"))
+})
+
+# 2. Combine the list of tibbles into a single multi-row sits cube
+class_cube <- do.call(rbind, cube_list)
 
 # Step 2.2 -- Get validation samples points (in geographical coordinates - lat/long)
-samples_validation <- st_read(grep(".*_prodes_*.",
-                                   samples_validation_list, value = TRUE))
+samples_validation <- read_sf(grep(".*_prodes_*.",
+                                   samples_validation_list,
+                                   value = TRUE))
 
 # Step 2.3 -- Calculate accuracy
 prodes_acc <- sits_accuracy(class_cube, 
@@ -283,8 +276,114 @@ prodes_acc$error_matrix
 # Step 2.6 -- Plotting PRODES Adjusted Map Accuracy
 plot_accuracy(
   acc       = prodes_acc,
-  version   = paste0(version, "-mosaic"),
+  version   = version,
   tile      = tiles,
   plots_dir = plots_dir,
   prefix    = "prodes-acc"
 )
+
+# =============================================================================
+# Análise de Incerteza por Classe — SITS  (inputs em .gpkg)
+# =============================================================================
+#Readinf Files
+pattern_tif <- paste0(".*_", tile, ".*_entropy_", version, "\\.tif$")
+
+uncertainty_raster_path <- list.files(class_dir,
+                                      pattern = pattern_tif, 
+                                      recursive = TRUE,
+                                      full.names = TRUE)
+
+unc_r <- terra::rast(uncertainty_raster_path)
+names(unc_r) <- "uncertainty"
+
+#Extracting entropy
+message("\n[3/6] Extracting Entropy...")
+unc_vals        <- exactextractr::exact_extract(unc_r,
+                                                samples_validation,
+                                                fun = "mode",
+                                                append_cols = "pol_id",
+                                                force_df = TRUE,
+                                                max_cells_in_memory = 1e+09)
+names(unc_vals) <- c("pol_id", "uncertainty")
+
+sf_cls <- dplyr::left_join(samples_validation, unc_vals, by = "pol_id") |>
+  sf::st_drop_geometry()
+
+
+#Statistcs
+message("\n[5/6] Calculando estatísticas...")
+stats_class <- sf_cls |>
+  group_by(class) |>
+  summarise(
+    n_segs          = n(),
+    inc_mean       = mean(uncertainty,     na.rm = TRUE),
+    inc_median     = median(uncertainty,   na.rm = TRUE),
+    inc_sd          = sd(uncertainty,       na.rm = TRUE),
+    inc_q25         = quantile(uncertainty, 0.25, na.rm = TRUE),
+    inc_q75         = quantile(uncertainty, 0.75, na.rm = TRUE),
+    inc_max         = max(uncertainty,      na.rm = TRUE),
+    #pct_alta_incert = mean(uncertainty >= limiar_alto, na.rm = TRUE) * 100,
+    .groups = "drop"
+  ) |>
+  arrange(desc(inc_mean))
+readr::write_excel_csv2(stats_class,
+                        file.path(output_dir,
+                                  "stats_incerteza_por_classe.csv"))
+
+#Generate plots
+message("[6/6] Gerando gráficos...")
+n_cls <- nlevels(as.factor(sf_cls$class))
+colors <- scales::hue_pal()(n_cls)
+
+# ── 8.1  Violin + Boxplot — distribuição de entropia por classe ──────────────
+p_box <- sf_cls |>
+  mutate(class = fct_reorder(class, uncertainty, .fun = median, .desc = TRUE)) |>
+  ggplot(aes(x = class, y = uncertainty, fill = class)) +
+  geom_violin(alpha = 0.35, color = NA) +
+  geom_boxplot(width = 0.3, outlier.size = 0.4, outlier.alpha = 0.3) +
+  scale_fill_manual(values = colors, guide = "none") +
+  labs(title    = "Distribuição de Entropia por Classe",
+       #subtitle = "Linha vermelha = limiar de alta incerteza",
+       x = NULL,
+       y = "Entropia") +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 35, hjust = 1),
+        plot.title  = element_text(face = "bold"))
+
+ggsave(file.path(plots_dir, "boxplot_incerteza_por_classe.png"),
+       p_box, width = 12, height = 6, dpi = 150, bg = "white")
+plot(p_box)
+
+message("  Gerando heatmap de probabilidades...")
+
+heat_df <- sf_cls |>
+  group_by(class) |>
+  summarise(across(5:16, ~ mean(.x, na.rm = TRUE)),
+            .groups = "drop") |>
+  pivot_longer(-class,
+               names_to = "class_prob",
+               values_to = "mean_prob")
+
+p_heat <- heat_df |>
+  ggplot(aes(x = class_prob, y = class, fill = mean_prob)) +
+  geom_tile(color = "white", linewidth = 0.4) +
+  geom_text(aes(label = round(mean_prob, 2)), size = 2.5) +
+  scale_fill_gradient2(
+    low = "#2166ac", mid = "#f7f7f7", high = "#d73027",
+    midpoint = 1 / 12,
+    name = "Prob.\nmédia"
+  ) +
+  labs(title    = "Probabilidade Média: Classe Predita × Classe Candidata",
+       subtitle = "Diagonal = confiança do modelo  |  Fora da diagonal = confusão entre classes",
+       x = "Classe candidata", y = "Classe predita") +
+  theme_minimal(base_size = 10) +
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
+        plot.title  = element_text(face = "bold"))
+
+w <- max(10, 12 * 1.1)
+h <- max(7,  n_cls * 0.65)
+
+ggsave(file.path(plots_dir, "heatmap_probabilidades.png"),
+       p_heat, width = w, height = h, dpi = 150, bg = "white")
+
+plot(p_heat)

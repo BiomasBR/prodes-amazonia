@@ -16,39 +16,105 @@ library(smoothr)
 
 # Step 1.2 -- Define paths for files and folders
 tile            <- "012014"
-version         <- "rf-2y-novos-segmentos"
+version         <- "rf-1y-all-samples-new-pol-avg-false-final-seg"
 class_path      <- "data/class"
-mask_path       <- "data/raw/auxiliary/masks" #nome da máscara em gpkg geral
+mask_path       <- "data/raw/auxiliary/mask_geral_amz_v2024.gpkg" #nome da máscara em gpkg geral
+config_dir      <- ".."
 
+# Step 1.3 -- define raw classification path and load the file
+raw_class_path <- list.files(class_path,
+                             pattern <- paste0(".*_", tile, "_.*_class_", version, "\\.gpkg$"),
+                             full.names = TRUE,
+                             recursive = TRUE)
+raw_class <- read_sf(raw_class_path)
 
-post_class_path <- file.path(class_path, tile, "post_processed")
+# Step 1.4 -- extract the number of 'years'
+years <- regmatches(version, regexpr("\\d+y", version))
+
+# Step 1.5 -- define and create post classification path
+post_class_path <- file.path(class_path, tile, "post_processed", version)
 dir.create(post_class_path,
            showWarnings = FALSE,
            recursive = TRUE)
 
-pattern <- paste0(".*", tile, ".*", "class",
-                  ".*", version, ".*\\.gpkg$")
+# ============================================================
+# . Translation Stage
+# ============================================================
 
-raw_class_path <- list.files(class_path,
-                             pattern = pattern,
-                             full.names = TRUE)
+read_class_config <- function(config_file = "class_config.txt") {
+  
+  if (!file.exists(config_file)) {
+    stop(paste("Configuration file not found:", config_file))
+  }
+  
+  lines <- readLines(config_file, encoding = "UTF-8", warn = FALSE)
+  
+  # Remove empty lines and comments
+  lines <- trimws(lines)
+  lines <- lines[nchar(lines) > 0 & !startsWith(lines, "#")]
+  
+  # Identify sections and populate lists
+  current_section  <- NULL
+  class_trans_list <- list()
+  colors_list      <- list()
+  
+  for (line in lines) {
+    if (startsWith(line, "[") && endsWith(line, "]")) {
+      current_section <- gsub("\\[|\\]", "", line)
+      next
+    }
+    
+    if (!is.null(current_section) && grepl("=", line)) {
+      parts <- strsplit(line, "=", fixed = TRUE)[[1]]
+      key   <- trimws(parts[1])
+      value <- trimws(paste(parts[-1], collapse = "=")) # preserves '=' in hex codes
+      
+      if (current_section == "CLASS_TRANSLATION") {
+        class_trans_list[[key]] <- value
+      } else if (current_section == "COLORS") {
+        colors_list[[key]] <- value
+      }
+    }
+  }
+  
+  class_translation <- unlist(class_trans_list)
+  my_colors         <- unlist(colors_list)
+  
+  message(sprintf("Config loaded: %d class translations | %d colors",
+                  length(class_translation), length(my_colors)))
+  
+  return(list(
+    class_translation = class_translation,
+    my_colors         = my_colors
+  ))
+}
 
-raw_class <- read_sf(raw_class_path)
+config     <- read_class_config(file.path(config_dir, "class_config.txt"))
+class_translation <- config$class_translation
+
+raw_class$class <- ifelse(
+       raw_class$class %in% names(class_translation),
+       class_translation[raw_class$class],
+       raw_class$class
+   )
+
+raw_class <- raw_class |>
+  rename_with(~ class_translation[.x],
+              .cols = any_of(names(class_translation)))
 
 # ============================================================
 # 2. Probabilistic reclassification
 # ============================================================
 
-# Step 2.1 -- Create sum columns 
+# Step 2.1 -- Create sum columns
 raw_class <- raw_class |>
   mutate(
     Suppression_sum = rowSums(
       across(
         all_of(c(
-          "Corte_Raso",
-          "Corte_Raso_Com_Vegetacao",
-          "Corte_Raso_Com_Fogo",
-          "Corte_Raso_Com_Arvores_Remanescentes"
+          "Clear_Cut_Bare_Soil",
+          "Clear_Cut_Vegetation",
+          "Clear_Cut_Trees"
         ))
       ),
       na.rm = TRUE
@@ -56,18 +122,19 @@ raw_class <- raw_class |>
     Degrad_sum = rowSums(
       across(
         all_of(c(
-          "Degradacao",
-          "Degradacao_Por_Fogo"
+          "Degradation",
+          "Degradation_Fire"
         ))
       ),
       na.rm = TRUE
     ),
     Natural = rowSums(
-      across(
+     across(
         all_of(c(
-          "Floresta",
-          "Floresta_Transicional",
-          "Vegetacao_Natural_Nao_Florestal"
+          "Forest",
+          "Non_Forest_Natural_Vegetation",
+          "Transition_Forest",
+          "Wetland"
         ))
       ),
       na.rm = TRUE
@@ -80,8 +147,8 @@ raw_class <- raw_class |>
     class = if_else(
       Suppression_sum >= Degrad_sum &
         Suppression_sum >= Natural &
-        Suppression_sum >= Corpo_Dagua,
-      "Soma_Supressao",
+        Suppression_sum >= Water,
+      "Suppression_sum",
       class
     )
   )
@@ -90,14 +157,14 @@ raw_class <- raw_class |>
 post_class <- raw_class |>
   filter(
     class %in% c(
-      "Corte_Raso",
-      "Corte_Raso_Com_Vegetacao",
-      "Corte_Raso_Com_Fogo",
-      "Corte_Raso_Com_Arvores_Remanescentes",
+      "Clear_Cut_Bare_Soil",
+      "Clear_Cut_Vegetation",
+      "Clear_Cut_Burned_Area",
+      "Clear_Cut_Trees",
       "Suppression_sum"
     )
   ) |>
-  mutate(class = "supressao")
+  mutate(class = "supression")
 
 # Step 2.7 -- Dissolve and aggregate geometries
 post_class <- post_class |>
@@ -299,7 +366,7 @@ remove_cloud_areas <- function(
 
 # Step 4.2 -- Run 'remove_cloud_areas' function
 sits_classification_cloud_cleaned <- remove_cloud_areas(
-  sits_reclassification = sits_reclassification,
+  sits_reclassification = post_class,
   cloud_vec             = cloud_vec,  # NULL if there are no clouds
   buffer_dist           = 100
 )
@@ -308,18 +375,18 @@ sits_classification_cloud_cleaned <- remove_cloud_areas(
 # 5. Fill holes < 1 hectare (first round)
 # ============================================================
 
-query <- sprintf("SELECT * FROM  WHERE tile = '%s'", tile) #nome da máscara em gpkg geral
+query <- sprintf("SELECT * FROM mask_geral_amz_v2024 WHERE tile = '%s'", tile) #nome da máscara em gpkg geral
 prodes_mask <- read_sf(mask_path,
                        query = query) 
 
 prodes_mask <- sf::st_transform(
   prodes_mask,
-  sf::st_crs(reclass_cloud_cleaned)
+  sf::st_crs(sits_classification_cloud_cleaned)
 )
 
-merged <- list(reclass_cloud_cleaned, prodes_mask) |>
+merged <- list(sits_classification_cloud_cleaned, prodes_mask) |>
   purrr::map(sf::st_make_valid) |>
-  purrr::map(\(x) sf::st_transform(x, sf::st_crs(reclass_cloud_cleaned))) |>
+  purrr::map(\(x) sf::st_transform(x, sf::st_crs(sits_classification_cloud_cleaned))) |>
   purrr::map(\(x) {
     sf::st_geometry(x) <- "geom"
     x
@@ -352,7 +419,7 @@ mask_union <- prodes_mask |>
 class_diff_mask <- sf::st_difference(
   smoothed,
   mask_union
-) |>
+) |> sf::st_collection_extract("POLYGON") |> 
   sf::st_cast("POLYGON") |>
   sf::st_sf()
 
@@ -370,21 +437,21 @@ class_diff_mask_filled_bays <- class_diff_mask |>
 # 8. Fill holes < 1 hectare (second round)
 # ============================================================
 
-merged_2 <- list(class_diff_mask_filled_bays, mask) |>
-  purrr::map(sf::st_make_valid) |>
-  purrr::map(\(x) sf::st_transform(x, sf::st_crs(class_diff_mask_filled_bays))) |>
-  purrr::map(\(x) {
-    sf::st_geometry(x) <- "geom"
-    x
-  }) |>
-  purrr::map(\(x) sf::st_cast(x, "MULTIPOLYGON")) |>
-  dplyr::bind_rows() |>
-  sf::st_union()
+merged_2 <- sf::st_union(
+  c(
+    sf::st_geometry(sf::st_make_valid(class_diff_mask_filled_bays)),
+    sf::st_geometry(mask_union)
+  )
+) |>
+  sf::st_collection_extract("POLYGON") |>  # pull only polygon parts
+  sf::st_union() |>                         # re-union into one geometry
+  sf::st_make_valid()
 
 smoothed_2 <- smoothr::fill_holes(
   merged_2,
   threshold = units::set_units(10000, "m^2")
-)
+) |>
+  sf::st_make_valid()
 
 # ============================================================
 # 9. Difference with deforestation mask (second round)
@@ -394,82 +461,50 @@ class_diff_mask_2 <- sf::st_difference(
   smoothed_2,
   mask_union
 ) |>
+  sf::st_make_valid() |>
+  sf::st_collection_extract(type = "POLYGON") |>
   sf::st_cast("POLYGON") |>
-  sf::st_sf()
-
-sf::st_write(
-  class_diff_mask_2,
-  file.path(
-    output_dir,
-    paste0("class_diff_mask_2_", tile_id, "_", end_date_scl, ".gpkg")
-  )
-)
+  sf::st_sf()|>
+  st_make_valid()
 
 # ============================================================
-# 10. Remove polygons < 1 hectare
+# 10. Remove polygons outside the biome border
 # ============================================================
 
-class_diff_mask_2$area_m2 <- as.numeric(sf::st_area(class_diff_mask_2))
-class_diff_mask_2$area_ha <- class_diff_mask_2$area_m2 / 10000
+biome <- read_sf("data/raw/auxiliary/borders/amazon-biome-border-epsg10857.gpkg") |>
+  st_make_valid() |>
+  st_transform(st_crs(class_diff_mask_2))
 
-class_diff_mask_bigger_than_1ha <- class_diff_mask_2 |>
+class_biome <- st_intersection(class_diff_mask_2, biome)
+
+# ============================================================
+# 11. Remove polygons < 1 hectare
+# ============================================================
+
+class_biome$area_m2 <- as.numeric(sf::st_area(class_biome))
+class_biome$area_ha <- class_biome$area_m2 / 10000
+
+class_biome_bigger_than_1ha <- class_biome |>
   dplyr::filter(area_ha >= 1)
 
 # ============================================================
-# 11. Save final result
+# 12. Save final result
 # ============================================================
 
-poligonos_supressao <- st_transform(
-  class_diff_mask_bigger_than_1ha,
+supression_polygons <- st_transform(
+  class_biome_bigger_than_1ha,
   crs = 4674
 ) |>
-  sf::st_cast("POLYGON") 
+  sf::st_cast("POLYGON") |>
+  sf::st_make_valid()
 
 sf::st_write(
-  poligonos_supressao,
+  supression_polygons,
   file.path(
     post_class_path,
-    paste0("sits-classification-post-processed_",
-           tile, "_", end_date_scl, ".gpkg")
+    paste0("class-post-processed_",
+           tile,"_",years,"_",
+           end_date_scl,"_",
+           version, ".gpkg")
   )
 )
-
-# ============================================================
-# 12. Spatial logic (adapted for sf)
-# ============================================================
-
-# Step A: Separate classes
-arvore_remanesce <- result_filtered %>%
-  filter(class == "DESMAT_ARVORE_REMANESCE")
-
-outras_classes <- result_filtered %>%
-  filter(class != "DESMAT_ARVORE_REMANESCE")
-
-if (nrow(arvore_remanesce) > 0 && nrow(outras_classes) > 0) {
-  
-  message("Calculating spatial relationships...")
-  
-  # Step B: Reference geometry
-  outras_classes_union <- st_union(outras_classes)
-  
-  # Step C: Disjoint test
-  matriz_disjoint <- st_disjoint(
-    arvore_remanesce,
-    outras_classes_union,
-    sparse = FALSE
-  )
-  
-  is_separated <- matriz_disjoint[, 1]
-  
-  # Step D: Filter (keep intersecting)
-  arvore_remanesce_limpas <- arvore_remanesce[!is_separated, ]
-  
-  # Step E: Merge results
-  final_result <- bind_rows(
-    outras_classes,
-    arvore_remanesce_limpas
-  )
-  
-} else {
-  final_result <- result_filtered
-}

@@ -14,11 +14,28 @@ library(terra)
 library(units)
 library(smoothr)
 
-# Step 1.2 -- Define the paths for files and folders needed in the processing
-mask_path <- "data/raw/auxiliary/mask_geral_nf_v2024.gpkg"
-sits_classification_path <- "data/class/014001/original_class/SENTINEL-2_MSI_014001_2023-08-13_2025-07-28_class_rf-2y-014001-novos-segmentos.gpkg"
-sits_classification_raw <- sf::st_read(sits_classification_path, quiet = TRUE)
-output_dir <- sub("/SENTINEL.*", "", sits_classification_path)
+# Step 1.2 -- Define paths for files and folders
+tile            <- "012014"
+version         <- "rf-3y-all-samples-new-pol-avg-false"
+class_path      <- "data/class"
+mask_path       <- "data/raw/auxiliary/mask_geral_amz_v2024.gpkg" #nome da máscara em gpkg geral
+
+# Step 1.3 -- define raw classification path and load the file
+raw_class_path <- list.files(class_path,
+                             pattern = paste0(".*", tile, ".*", "class",
+                                              "*.*", version, ".*\\.gpkg$"),
+                             full.names = TRUE,
+                             recursive = TRUE)
+raw_class <- read_sf(raw_class_path)
+
+# Step 1.4 -- extract the number of 'years'
+years <- regmatches(version, regexpr("\\d+y", version))
+
+# Step 1.5 -- define and create post classification path
+post_class_path <- file.path(class_path, tile, "post_processed")
+dir.create(post_class_path,
+           showWarnings = FALSE,
+           recursive = TRUE)
 
 # ============================================================
 # 2. Probabilistic reclassification
@@ -384,29 +401,48 @@ class_diff_mask_2 <- sf::st_difference(
   sf::st_sf()
 
 # ============================================================
-# 10. Exclude polygons < 1 hectares
+# 10. Remove polygons outside the biome border
 # ============================================================
 
-# Step 10.1 -- Calculate the area of each polygon (in m²)
-class_diff_mask_2$area_m2 <- as.numeric(sf::st_area(class_diff_mask_2))
+biome <- read_sf("data/raw/amazon-nf-biome-border-epsg10857.gpkg") |>
+  st_make_valid()
 
-# Step 10.2 -- Convert square meters to hectares
-class_diff_mask_2$area_ha <- class_diff_mask_2$area_m2 / 10000
+class_biome <- st_intersection(class_diff_mask_2, biome)
 
-# Step 10.3 -- Keep only polygons with an area greater than or equal to 1 hectare
-class_diff_mask_bigger_than_1ha <- class_diff_mask_2 |>
+# ============================================================
+# 11. Remove polygons < 1 hectare
+# ============================================================
+
+# Step 11.1 -- Calculate the area of each polygon (in m²)
+class_biome$area_m2 <- as.numeric(sf::st_area(class_biome))
+
+# Step 11.2 -- Convert square meters to hectares
+class_biome$area_ha <- class_biome$area_m2 / 10000
+
+# Step 11.3 -- Keep only polygons with an area greater than or equal to 1 hectare
+class_biome_bigger_than_1ha <- class_diff_mask_2 |>
   dplyr::filter(area_ha >= 1)
 
 # ============================================================
-# 11. Save the final result
+# 12. Save final result
 # ============================================================
 
-# Step 11.1 -- Reproject to EPSG:4674 (SIRGAS 2000)
-poligonos_supressao <- st_transform(class_diff_mask_bigger_than_1ha, crs = 4674)
+# Step 12.1 -- Reproject to EPSG:4674 (SIRGAS 2000)
+supression_polygons <- st_transform(
+  class_biome_bigger_than_1ha,
+  crs = 4674
+) |>
+  sf::st_cast("POLYGON") |>
+  sf::st_make_valid()
 
-# Step 11.2 -- Save the final result
-sf::st_write(poligonos_supressao, 
-             file.path(
-               output_dir,
-               paste0("sits-classification-post-processed_", tile_id, "_", end_date_scl, ".gpkg")
-             ))
+# Step 12.2 -- Save the final result
+sf::st_write(
+  supression_polygons,
+  file.path(
+    post_class_path,
+    paste0("class-post-processed_",
+           tile,"_",years,"_",
+           end_date_scl,"_",
+           version,".gpkg")
+  )
+)

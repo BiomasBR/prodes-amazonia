@@ -79,15 +79,11 @@ process_version <- paste0(date_process, time_process)
 # File and folder paths
 time_series_path  <- file.path("data/rds/time_series/", time_series_name)
 rds_path          <- "data/rds/"
-plots_path        <- "data/plots/"
+plots_dir        <- "data/plots/tcnn"
 config_dir        <- ".."
 
 # Identifier to distinguish this model run from previous versions
 var <- stringr::str_split_i(time_series_name, "_", 6)
-
-# Plots organized by var
-plots_dir <- file.path(plots_path, var)
-dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ============================================================
 # 1. Cross-validation of training data

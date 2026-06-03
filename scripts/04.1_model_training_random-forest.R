@@ -78,15 +78,11 @@ process_version <- paste0(date_process, time_process)
 # File and folder paths
 time_series_path  <- file.path("data/rds/time_series/", time_series_name)
 rds_path          <- "data/rds/"
-plots_path        <- "data/plots/"
+plots_dir        <- "data/plots/model_rf"
 config_dir        <- ".."
 
 # Identifier to distinguish this model run from previous versions
 var <- stringr::str_split_i(time_series_name, "_", 6)
-
-# Plots organized by var
-plots_dir <- file.path(plots_path, var)
-dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ============================================================
 # 1. Cross-validation of training data
@@ -247,7 +243,11 @@ save_rf_model_plot(
   width      = 1600,   # width in pixels
   height     = 1000,   # height in pixels
   res        = 200,    # DPI
+<<<<<<< Updated upstream:scripts/04.1_model_training_random-forest.R
   scale      = 1       # increases all elements proportionally  
+=======
+  scale      = 1          # increases all elements proportionally  
+>>>>>>> Stashed changes:scripts/4.1_model_training_random_forest.R
 )
 
 # Step 3.3 --  Define the function to plot and save Out of Box error by the number of trees
