@@ -15,7 +15,7 @@ library(openxlsx)
 
 # Define the parameters: These are user-defined variables
 tiles      = '012014'
-model_name <- "rf-model_4t_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_new-deforestation_2026-05-07_09h38m.rds"
+model_name <- "rf-model_4t_012014-012015-013014-013015_1y_2024-07-27_2025-07-28_all-samples-new-pol-avg-false_2026-02-25_21h03m.rds"
 
 # Extract the date of the string separated by "_"
 start_date <- stringr::str_split_i(model_name, "_", 5)
@@ -41,7 +41,7 @@ version          <- paste(stringr::str_split_i(model_name, "-", 1),
                           sep = "-")
 
 # List of validation sample files matching the version pattern in the samples directory
-pattern <- paste0(".*", tiles, ".*", version, ".*\\.gpkg$")
+pattern <- paste0(".*points.*", tiles, ".*", version, ".*\\.gpkg$")
 
 samples_validation_list <- dir(
   samples_dir,
@@ -229,7 +229,7 @@ plot_accuracy(
 # ============================================================
 # 2. Accuracy assessment of PRODES Adjusted Map classified
 # ============================================================
-cube_dirs <- grep("prodes",
+cube_dirs <- grep("grouped",
                   list.dirs(class_dir, recursive = TRUE) |> 
                     purrr::keep(~ length(list.files(.x, pattern = pattern)) > 0),
                   value = TRUE)
@@ -247,7 +247,7 @@ sits_cube(
   tiles =  tiles,
   start_date = start_date,
   end_date = end_date,
-  version = paste("prodes-degradation", version, sep = "-"),
+  version = paste("grouped", version, sep = "-"),
   data_dir = dir,
   parse_info = c("satellite", "sensor", "tile", "start_date", "end_date", 
                  "band", "version"))
@@ -257,7 +257,7 @@ sits_cube(
 class_cube <- do.call(rbind, cube_list)
 
 # Step 2.2 -- Get validation samples points (in geographical coordinates - lat/long)
-samples_validation <- read_sf(grep(".*_prodes_*.",
+samples_validation <- read_sf(grep(".*_grouped_*.",
                                    samples_validation_list,
                                    value = TRUE))
 
