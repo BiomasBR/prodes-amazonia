@@ -10,8 +10,7 @@ library(sf)
 library(dplyr)
 library(ggplot2)
 library(stringr)
-library(segmetric)
-library(openxlsx)
+library(purrr)
 
 # Define the parameters: These are user-defined variables
 tiles      = '000000'
@@ -289,7 +288,7 @@ plot_accuracy(
 # Análise de Incerteza por Classe — SITS  (inputs em .gpkg)
 # =============================================================================
 #Readinf Files
-pattern_tif <- paste0(".*_", tile, ".*_entropy_", version, "\\.tif$")
+pattern_tif <- paste0(".*_", tiles, ".*_entropy_", version, "\\.tif$")
 
 uncertainty_raster_path <- list.files(class_dir,
                                       pattern = pattern_tif, 
