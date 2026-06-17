@@ -130,7 +130,10 @@ print(table(samples_train$label))
 # 3. Time Series Extraction
 # ============================================================
 
-# Step 3.1 -- Extract Time Series from samples_train and calculate the process duration
+# Step 3.1 -- Set a seed of random number generator (RNG) for reproducibility
+set.seed(88)
+
+# Step 3.2 -- Extract Time Series from samples_train and calculate the process duration
 sits_get_data_start <- Sys.time()
 samples <- sits_get_data(
   cube        = cube_merge_lsmm_train,
@@ -147,7 +150,7 @@ sprintf("SITS get data process duration (HH:MM): %02d:%02d",
         as.integer((sits_get_data_time %% 3600) / 60))
 print("Time series extracted successfully!")
 
-# Step 3.2 -- Save the samples Time Series to a R file
+# Step 3.3 -- Save the samples Time Series to a R file
 saveRDS(samples, 
         paste0(ts_path,
                paste("TS-tiles", tiles_train,
