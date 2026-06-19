@@ -53,25 +53,11 @@ cube <- sits_cube(
 # Step 1.2 -- Extract tiles and duration from the cube (in years)
 no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
 
-# Step 1.3 -- Retrieve Mixture Model Cube from a predefined repository
-mm_cube <- sits_cube(
-  source      = "BDC",
-  collection  = "SENTINEL-2-16D",
-  bands       = c("SOIL", "VEG", "WATER"),
-  tiles       = tile,
-  data_dir    = mixture_path,
-  start_date  = start_date,
-  end_date    = end_date,
-  progress    = TRUE)
-
-# Step 1.4 -- Merge the Classification Cube with Mixture Model Cube
-cube_merge_lsmm_class <- sits_merge(mm_cube, cube)
-
-# Step 1.5 -- Create a local segmented cube based on previous segmentation results
+# Step 1.3 -- Create a local segmented cube based on previous segmentation results
 local_segs_cube <- sits_cube(
   source      = "BDC",
   collection  = "SENTINEL-2-16D",
-  raster_cube = cube_merge_lsmm_class,
+  raster_cube = cube,
   vector_dir  = vector_path,
   vector_band = "segments",
   version     = seg_version,
@@ -79,7 +65,7 @@ local_segs_cube <- sits_cube(
                   "end_date", "band", "version", "X1"))
 
 
-# Step 1.6 -- Create output directory per tile
+# Step 1.4 -- Create output directory per tile
 tile_period_dir <- file.path(class_path, tile, "original_class",
                              models[model_type], paste(no.years,
                                                        var,
@@ -114,7 +100,7 @@ class_prob <- sits_classify(
 vector_cube <- sits_cube(
   source      = "BDC",
   collection  = "SENTINEL-2-16D",
-  raster_cube = cube_merge_lsmm_class,
+  raster_cube = cube,
   vector_dir  = tile_period_dir,
   vector_band = "probs",
   version     = version, # do not use underline character
