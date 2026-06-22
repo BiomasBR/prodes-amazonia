@@ -34,7 +34,7 @@ endmembers <- tibble::tribble(
   ~class,    ~B02, ~B03, ~B04, ~B05, ~B06, ~B07, ~B08, ~B8A, ~B11, ~B12,
   "soil",    1799, 2154, 3028, 3303, 3472, 3656, 3566, 3686, 5097, 4736,
   "veg",      827,  892,  410, 1070, 4206, 5646, 5495, 6236, 2101,  775,
-  "water",    946,  739,  280,  208,  180,  167,  135,  129,   26,   14,
+  "dark",    946,  739,  280,  208,  180,  167,  135,  129,   26,   14,
 )
 
 # Step 2.2 -- Generate the mixture model cube and calculate the process duration
