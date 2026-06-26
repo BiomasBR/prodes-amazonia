@@ -19,7 +19,7 @@ end_date   <- stringr::str_split_i(time_series_name, "_", 5)
 # Calculate the number of years in the training cube
 no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
 tiles_train <- paste(sort(tiles), collapse = "-")
-no.tiles <- paste0(length(tiles_train), "t")
+no.tiles <- paste0(length(tiles), "t")
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
