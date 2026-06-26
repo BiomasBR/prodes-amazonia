@@ -19,7 +19,7 @@ end_date   <- stringr::str_split_i(time_series_name, "_", 5)
 # Calculate the number of years in the training cube
 no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
 tiles_train <- paste(sort(tiles), collapse = "-")
-no.cubes <- paste0(length(tiles_train), "t")
+no.tiles <- paste0(length(tiles_train), "t")
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -174,7 +174,7 @@ rf_model <- sits_train(
 # Step 2.3 -- Save the ML model to a R file
 saveRDS(rf_model,
         paste0(rds_path, "model/random_forest/",
-               paste("rf-model", no.cubes,
+               paste("rf-model", no.tiles,
                      tiles_train, no.years,
                      start_date, end_date,
                      var, process_version, sep = "_"),
