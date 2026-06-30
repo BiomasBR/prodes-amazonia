@@ -399,7 +399,7 @@ som_evaluate_cluster_clean_balanced <- function(som_cluster_clean_balanced,
   # Save the plot
   ggsave(
     filename = paste0(
-      "confusao-cluster-clean-balanced_", tiles_train, "_", var, "_", process_version, ".png"
+      "confusion-cluster-clean-balanced_", tiles_train, "_", var, "_", process_version, ".png"
     ),
     plot = p,
     path = tile_period_dir,
