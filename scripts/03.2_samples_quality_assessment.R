@@ -12,7 +12,39 @@ library(tibble)
 library(dplyr)
 library(ggplot2)
 
-# Step 1.2 -- Function to read class names and their colors::IMPORTANT
+# Step 1.2 -- Define the date and time for the start of processing
+date_process    <- format(Sys.Date(), "%Y-%m-%d_")
+time_process    <- format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo")
+process_version <- paste0(date_process, time_process)
+
+# Step 1.3 -- Define the paths for files and folders needed in the processing
+rds_path      <- "data/rds"
+plots_path    <- "data/plots"
+rds_filename  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_after-apocalypse-agrupado_2026-06-29_10h48m.rds"
+config_dir    <- "../scripts"
+
+# Step 1.4 -- Identifier to distinguish this model run from previous versions
+var <- "after-apocalypse-agrupado-1y"
+
+# ============================================================
+# 2. Load and Explore Train Sample Data
+# ============================================================
+
+# Step 2.1 -- Load the samples Time Series from a R file
+samples <- readRDS(file.path(rds_path, "time_series", rds_filename))
+
+# Step 2.2 -- Create output directory per tile and period
+tiles_train <- gsub(".*_(\\d{6}(-\\d{6})*)_.*", "\\1", rds_filename)
+
+# Step 2.3 -- 
+tile_period_dir <- file.path(plots_path, var)
+dir.create(tile_period_dir, recursive = TRUE, showWarnings = FALSE)
+
+# ============================================================
+# 3. Translation
+# ============================================================
+
+# Step 3.1 -- Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
   
   if (!file.exists(config_file)) {
@@ -61,36 +93,16 @@ read_class_config <- function(config_file = "class_config.txt") {
   ))
 }
 
-# Step 1.2 -- Define the date and time for the start of processing
-date_process    <- format(Sys.Date(), "%Y-%m-%d_")
-time_process    <- format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo")
-process_version <- paste0(date_process, time_process)
-
-# Step 1.3 -- Define the paths for files and folders needed in the processing
-rds_path      <- "data/rds/"
-plots_path    <- "data/plots/"
-rds_filename  <- "samples_4-tiles-012015-012014-013015-013014_1y-period-2024-07-27_2025-07-28_all_samples_new_pol_avg_false_2026-02-24_20h01m.rds"
-config_dir    <- "../scripts"
-
-# Step 1.5 -- Identifier to distinguish this model run from previous versions
-var <- "all_samples_new_pol_avg_false"
-
-# ============================================================
-# 3. Load and Explore Train Sample Data
-# ============================================================
-
-# Step 3.3 -- Load the samples Time Series from a R file
-samples <- readRDS(file.path(rds_path, "time_series", rds_filename))
-
-# Step 3.4 -- Create output directory per tile and period
-tiles_train <- gsub(".*_(\\d{6}(-\\d{6})*)_.*", "\\1", rds_filename)
-
-tile_period_dir <- file.path(plots_path, var)
-dir.create(tile_period_dir, recursive = TRUE, showWarnings = FALSE)
-
-# Step 3.5 -- Load color palette from external config file
-config    <- read_class_config("class_config.txt")
+# Step 3.2 -- Load color palette and classes translation from external config file
+config    <- read_class_config("~/grupos/biomasbr-amazonia/sits-prodes/class_config.txt")
+class_translation <- config$class_translation
 my_colors <- config$my_colors
+
+# Step 3.3 -- Translate the colors names (English to Portuguese)
+nomes_em_pt <- names(class_translation)[match(names(my_colors), class_translation)]
+names(my_colors) <- nomes_em_pt
+
+# Step 3.4 -- Filter features
 my_colors <- my_colors[names(my_colors) %in% unique(samples$label)]
 
 # ============================================================
@@ -102,11 +114,11 @@ my_colors <- my_colors[names(my_colors) %in% unique(samples$label)]
 sits_som_map_start <- Sys.time()
 som_cluster <- sits_som_map(
   samples,
-  grid_xdim = 2,
-  grid_ydim = 2,
-  alpha = 1.0,
-  distance = "dtw",
-  rlen = 20
+  grid_xdim = 25,
+  grid_ydim = 25,
+  alpha = 1.0, # starting learning rate (decreases according to number of iterations)
+  distance = "dtw", # type of similarity measure (distance)
+  rlen = 20 # number of iterations to produce the SOM
 )
 sits_som_map_end <- Sys.time()
 sits_som_map_time <- as.numeric(sits_som_map_end - sits_som_map_start, units = "secs")
@@ -117,7 +129,7 @@ plot(som_cluster)
 
 # Step 4.1.2 -- Save SOM map plot
 ggsave(
-  filename = paste0(process_version, "_", tiles_train, "_", var, "_som-eval.png"),
+  filename = paste0("som-eval_", tiles_train, "_", var, "_", process_version, ".png"),
   path = tile_period_dir,
   scale = 1,
   width = 3529,
@@ -128,32 +140,60 @@ ggsave(
 
 # Step 4.2 -- Save the samples Time Series to a R file
 saveRDS(som_cluster, paste0(
-  rds_path, "som/",
-  process_version,
-  "_SOM1-", som_cluster$som$grid$xdim, "x", som_cluster$som$grid$ydim, "_",
-  tiles_train, "_", var, ".rds")
+  rds_path, "/som/",
+  "SOM1-", som_cluster$som$grid$xdim, "x", som_cluster$som$grid$ydim, "_",
+  tiles_train, "_", var, "_", process_version,".rds")
 )
 
-# Step 4.3 -- Produce a tibble with a summary of the mixed labels:
-som_eval <- sits_som_evaluate_cluster(som_cluster)
+# Step 4.3 -- Define function to SOM evaluation 
+som_evaluate_cluster <- function(som_cluster,
+                                 tiles_train,
+                                 var,
+                                 process_version,
+                                 tile_period_dir,
+                                 my_colors,
+                                 plot_width = 3529,
+                                 plot_height = 1578,
+                                 plot_dpi = 350) {
+  
+  # Produce a tibble with a summary of the mixed labels
+  som_eval <- sits_som_evaluate_cluster(som_cluster)
+  
+  # Plot the result of summary of the mixed labels
+  p <- plot(som_eval) +
+    labs(title = 'Confusion by cluster') +
+    xlab("Percentage of Mixture") +
+    ylab(NULL) +
+    scale_fill_manual(values = my_colors, name = "Legend") +
+    theme(legend.position = "right")
+  
+  print(p)
+  
+  # Save the plot of summary of the mixed labels
+  ggsave(
+    filename = paste0(
+      "confusion-cluster_", tiles_train, "_", var, "_", process_version, ".png"
+    ),
+    plot = p,
+    path = tile_period_dir,
+    scale = 1,
+    width = plot_width,
+    height = plot_height,
+    units = "px",
+    dpi = plot_dpi
+  )
+  
+  return(som_eval)
+}
 
-# Step 4.3.1 -- Plot the result of summary of the mixed labels
-plot(som_eval) +
-  labs(title = 'Confusion by cluster') +
-  xlab("Percentage of Mixture") +
-  ylab(NULL) +
-  scale_fill_manual(values = my_colors, name = "Legend") +
-  theme(legend.position = "right")
-
-# Step 4.3.2 -- Save the plot of summary of the mixed labels
-ggsave(
-  filename = paste0(process_version, "_", tiles_train, "_", var, "_confusion-cluster.png"),
-  path = tile_period_dir,
-  scale = 1,
-  width = 3529,
-  height = 1578,
-  units = "px",
-  dpi = 350,
+# Step 4.4 -- Run function to SOM evaluation 
+som_eval <- run_som_evaluate_cluster(
+  som_cluster = som_cluster,
+  tiles_train = tiles_train,
+  var = var,
+  process_version = process_version,
+  tile_period_dir = tile_period_dir,
+  my_colors = my_colors
 )
 
 # ============================================================
@@ -172,7 +212,7 @@ plot(all_samples)
 
 # Step 5.1.2 -- Save the plot
 ggsave(
-  filename = paste0(process_version, "_", tiles_train, "_", var, "_all-samples.png"),
+  filename = paste0("all-samples_", tiles_train, "_", var, "_", process_version, ".png"),
   path = tile_period_dir,
   scale = 1,
   width = 3529,
@@ -185,7 +225,9 @@ ggsave(
 clean_samples <- all_samples %>% filter(eval == "clean" | label == "DESMAT_DEGRAD_FOGO")
 
 # Step 5.3.1 -- Save the new_samples Time Series to a R file
-saveRDS(clean_samples, paste0(rds_path, "time_series/", process_version, "_", tiles_train, "_", var, "_clean-samples.rds"))
+saveRDS(clean_samples, 
+        paste0(rds_path, "/time_series/", 
+               "clean-samples_", tiles_train, "_", var, "_", process_version, ".rds"))
 
 # Step 5.4 -- Clustering new Time Series Samples and calculate the process duration
 # First, run with a 2x2 grid, then change to one of the values within the interval indicated by SITS and run again
@@ -208,7 +250,7 @@ plot(som_cluster_clean)
 
 # Step 5.4.2 -- Save the plot
 ggsave(
-  filename = paste0(process_version, "_", tiles_train, "_", var, "_som-eval-clean.png"),
+  filename = paste0("som-eval-clean_", tiles_train, "_", var, "_", process_version, ".png"),
   path = tile_period_dir,
   scale = 1,
   width = 3529,
@@ -219,61 +261,92 @@ ggsave(
 
 # Step 5.4.3 -- Save the new Time Series Samples to a R file
 saveRDS(som_cluster_clean, paste0(
-  rds_path, "som/",
-  process_version,
-  "_SOM2-", som_cluster_clean$som$grid$xdim, "x", som_cluster_clean$som$grid$ydim, "_",
-  tiles_train, "_", var, ".rds")
+  rds_path, "/som/", 
+  "SOM2-", som_cluster_clean$som$grid$xdim, "x", som_cluster_clean$som$grid$ydim, "_",
+  tiles_train, "_", var, "_", process_version, ".rds")
 )
 
-# Step 5.5 -- Produce a tibble with a summary of the mixed labels
-som_eval_clean <- sits_som_evaluate_cluster(som_cluster_clean)
+# Step 5.5 -- Define function to SOM evaluation after clean up
+som_evaluate_cluster_clean <- function(som_cluster,
+                                 tiles_train,
+                                 var,
+                                 process_version,
+                                 tile_period_dir,
+                                 my_colors,
+                                 plot_width = 3529,
+                                 plot_height = 1578,
+                                 plot_dpi = 350) {
+  
+  # Step 5.5 -- Produce a tibble with a summary of the mixed labels
+  som_eval_clean <- sits_som_evaluate_cluster(som_cluster_clean)
+  
+  
+  # Plot the result of summary of the mixed labels
+  p <- plot(som_eval_clean) +
+    labs(title = 'Confusion by cluster') +
+    xlab("Percentage of Mixture") +
+    ylab(NULL) +
+    scale_fill_manual(values = my_colors, name = "Legend") +
+    theme(legend.position = "right")
+  
+  print(p)
+  
+  # Save the plot of summary of the mixed labels
+  ggsave(
+    filename = paste0(
+      "confusion-cluster-clean_", tiles_train, "_", var, "_", process_version, ".png"
+    ),
+    plot = p,
+    path = tile_period_dir,
+    scale = 1,
+    width = plot_width,
+    height = plot_height,
+    units = "px",
+    dpi = plot_dpi
+  )
+  return(som_eval)
+}
 
-# Step 5.5.1 -- Plot the result
-plot(som_eval_clean) +
-  labs(title = 'Confusion by cluster') +
-  xlab("Percentage of Mixture") +
-  ylab(NULL) +
-  scale_fill_manual(values = my_colors, name = "Legend") +
-  theme(legend.position = "right")
-
-# Step 5.5.2 -- Save the plot
-ggsave(
-  filename = paste0(process_version, "_", tiles_train, "_", var, "_confusion-cluster-clean.png"),
-  path = tile_period_dir,
-  scale = 1,
-  width = 3529,
-  height = 1578,
-  units = "px",
-  dpi = 350,
+# Step 5.5.1 -- Run function to SOM evaluation after clean up
+som_eval_clean <- som_evaluate_cluster_clean(
+  som_cluster_clean = som_cluster_clean,
+  tiles_train = tiles_train,
+  var = var,
+  process_version = process_version,
+  tile_period_dir = tile_period_dir,
+  my_colors = my_colors
 )
 
 # ============================================================
 # 6. Analyse quality, filter and balance (SOM - 3)
 # ============================================================
 
-# Step 6.1 -- Reduce imbalance between the classes and calculate the process duration
+# Step 6.1 -- Count the unique features by a specific attribute.
+table(samples$label)
+
+# Step 6.2 -- Reduce imbalance between the classes and calculate the process duration
 sits_reduce_imbalance_start <- Sys.time()
 clean_samples_balanced <- sits_reduce_imbalance(
-  samples = clean_samples,
-  n_samples_over = 300,
-  n_samples_under = 500
+  samples = samples,
+  n_samples_over = 3000,
+  n_samples_under = 6000
 )
 sits_reduce_imbalance_end <- Sys.time()
 sits_reduce_imbalance_time <- as.numeric(sits_reduce_imbalance_end - sits_reduce_imbalance_start, units = "secs")
 sprintf("SITS reduce imbalance process duration (HH:MM): %02d:%02d", as.integer(sits_reduce_imbalance_time / 3600), as.integer((sits_reduce_imbalance_time %% 3600) / 60))
 
-# Step 6.2 -- Removing columns that contain NA values
+# Step 6.3 -- Removing columns that contain NA values
 clean_samples_balanced <- clean_samples_balanced[, colSums(is.na(clean_samples_balanced)) == 0]
 
-# Step 6.2.1 -- Save the new Time Series Samples Balanced to a R file
-saveRDS(clean_samples_balanced, paste0(rds_path, "time_series/", "samples-cleanned-&-balanced", "_", tiles_train, "_", var, "_", process_version, ".rds"))
+# Step 6.3.1 -- Save the new Time Series Samples Balanced to a R file
+saveRDS(clean_samples_balanced, paste0(rds_path, "/time_series/", "samples-cleanned-&-balanced", "_", tiles_train, "_", var, "_", process_version, ".rds"))
 
-# Step 6.3 -- Clustering new Time Series Samples Balanced using SOM
+# Step 6.4 -- Clustering new Time Series Samples Balanced using SOM
 # First, run with a 2x2 grid, then change to one of the values within the interval indicated by SITS and run again
 sits_som_map_start3 <- Sys.time()
 som_cluster_clean_balanced <- sits_som_map(clean_samples_balanced,
-                                           grid_xdim = 2,
-                                           grid_ydim = 2,
+                                           grid_xdim = 25,
+                                           grid_ydim = 25,
                                            alpha = 1.0,
                                            distance = "dtw",
                                            rlen = 20)
@@ -281,12 +354,12 @@ sits_som_map_end3 <- Sys.time()
 sits_som_map_time3 <- as.numeric(sits_som_map_end3 - sits_som_map_start3, units = "secs")
 sprintf("SITS SOM map 3 process duration (HH:MM): %02d:%02d", as.integer(sits_som_map_time3 / 3600), as.integer((sits_som_map_time3 %% 3600) / 60))
 
-# Step 6.3.1 -- Plot the SOM map
+# Step 6.4.1 -- Plot the SOM map
 plot(som_cluster_clean_balanced)
 
-# Step 6.3.2 -- Save the plot
+# Step 6.4.2 -- Save the plot
 ggsave(
-  filename = paste0(process_version, "_", tiles_train, "_", var, "_som-eval-clean-balanced.png"),
+  filename = paste0("som-eval-clean-balanced_", tiles_train, "_", var, "_", process_version,".png"),
   path = tile_period_dir,
   scale = 1,
   width = 3529,
@@ -295,28 +368,60 @@ ggsave(
   dpi = 350,
 )
 
-# Step 6.4 -- Produce a tibble with a summary of the mixed labels
-som_eval_clean_balanced <- sits_som_evaluate_cluster(som_cluster_clean_balanced)
+# Step 6.5 -- Define function to SOM evaluation after balancing
+som_evaluate_cluster_clean_balanced <- function(som_cluster_clean_balanced,
+                                                    clean_samples_balanced,
+                                                    tiles_train,
+                                                    var,
+                                                    process_version,
+                                                    tile_period_dir,
+                                                    my_colors,
+                                                    plot_width = 3529,
+                                                    plot_height = 1578,
+                                                    plot_dpi = 350) {
+  
+  # Produce a tibble with a summary of the mixed labels
+  som_eval_clean_balanced <- sits_som_evaluate_cluster(som_cluster_clean_balanced)
+  
+  # Show the summary of the balanced time series sample data
+  print(summary(clean_samples_balanced))
+  
+  # Plot the result
+  p <- plot(som_eval_clean_balanced) +
+    labs(title = 'Confusion by cluster') +
+    xlab("Percentage of Mixture") +
+    ylab(NULL) +
+    scale_fill_manual(values = my_colors, name = "Legend") +
+    theme(legend.position = "right")
+  
+  print(p)
+  
+  # Save the plot
+  ggsave(
+    filename = paste0(
+      "confusao-cluster-clean-balanced_", tiles_train, "_", var, "_", process_version, ".png"
+    ),
+    plot = p,
+    path = tile_period_dir,
+    scale = 1,
+    width = plot_width,
+    height = plot_height,
+    units = "px",
+    dpi = plot_dpi
+  )
+  
+  print("Samples analyzed successfully!")
+  
+  return(som_eval_clean_balanced)
+}
 
-# Step 6.4.1-- Show the summary of the balanced time series sample data
-summary(clean_samples_balanced)
-
-# Step 6.4.2-- Plot the result
-plot(som_eval_clean_balanced) +
-  labs(title = 'Confusion by cluster') +
-  xlab("Percentage of Mixture") +
-  ylab(NULL) +
-  scale_fill_manual(values = my_colors, name = "Legend") +
-  theme(legend.position = "right")
-
-# Step 6.4.3 -- Save the plot
-ggsave(
-  filename = paste0(process_version, "_", tiles_train,  var, "_confusao-cluster-clean-balanced.png"),
-  path = tile_period_dir,
-  scale = 1,
-  width = 3529,
-  height = 1578,
-  units = "px",
-  dpi = 350,
+# Step 6.5.1 -- Run function to SOM evaluation after balancing
+som_eval_clean_balanced <- som_evaluate_cluster_clean_balanced(
+  som_cluster_clean_balanced = som_cluster_clean_balanced,
+  clean_samples_balanced = clean_samples_balanced,
+  tiles_train = tiles_train,
+  var = var,
+  process_version = process_version,
+  tile_period_dir = tile_period_dir,
+  my_colors = my_colors
 )
-print("Samples analyzed successfully!")
