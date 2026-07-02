@@ -202,7 +202,7 @@ compute_uncertainty_raster <- function(
   invisible(tif_path)
 }
 
-# Step 3.1 -- Run function to calculate entropy, rasterize and exclude .gpkg
+# Step 3.2 -- Run function to calculate entropy, rasterize and exclude .gpkg
 compute_uncertainty_raster(
   vector_cube     = vector_cube,
   tile_period_dir = tile_period_dir,
