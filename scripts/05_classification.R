@@ -83,7 +83,7 @@ model <- readRDS(model_path)
 # Step 2.2 -- Define the version name of probability file
 version <- paste(model_type, no.years, var, sep = "-")
 
-# Step 2.3 -- 
+# Step 2.3 -- Set a seed of random number generator (RNG) for reproducibility
 set.seed(88)
 
 # Step 2.4 -- Classify segments according to the probabilities and calculate the process duration
