@@ -83,7 +83,10 @@ model <- readRDS(model_path)
 # Step 2.2 -- Define the version name of probability file
 version <- paste(model_type, no.years, var, sep = "-")
 
-# Step 2.3 -- Classify segments according to the probabilities and calculate the process duration
+# Step 2.3 -- 
+set.seed(88)
+
+# Step 2.4 -- Classify segments according to the probabilities and calculate the process duration
 class_prob <- sits_classify(
   data        = local_segs_cube,
   ml_model    = model,
@@ -96,7 +99,7 @@ class_prob <- sits_classify(
   progress    = TRUE
 )
 
-# Step 2.4 -- Reconstruct vector cube with classification probabilities 
+# Step 2.5 -- Reconstruct vector cube with classification probabilities 
 vector_cube <- sits_cube(
   source      = "BDC",
   collection  = "SENTINEL-2-16D",
@@ -108,7 +111,7 @@ vector_cube <- sits_cube(
                   "end_date", "band", "version")
 )
 
-# Step 2.5 -- Generate Final Classified Map of Segments
+# Step 2.6 -- Generate Final Classified Map of Segments
 class_map <- sits_label_classification(
   cube        = class_prob,
   output_dir  = tile_period_dir,
