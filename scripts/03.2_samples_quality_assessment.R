@@ -318,7 +318,11 @@ samples_quality <- analyse_quality(
 )
 
 # Step 4.3 -- Filter samples according to an evaluation class ("clean", "analyze", "remove") or to a specific class with low samples quantity
-cleaned_samples <- original_samples_quality %>% filter(eval == "clean")
+cleaned_samples <- samples_quality %>% 
+  filter(
+    eval %in% c("clean", "analyze"), # qualidade para manter
+    !label %in% c("River_Sandbar", "Riparian_Forest")  # classes para excluir
+  )
 
 # Step 4.4 -- Save the cleaned_samples Time Series to a .rds file
 saveRDS(cleaned_samples, 
