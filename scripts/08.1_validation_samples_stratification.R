@@ -14,9 +14,9 @@ library(stringr)
 library(purrr)
 
 # Define the parameters: These are user-defined variables
-model_name      <- "rf-model_4t_012015-012014-013015-013014_1y_2024-07-27_2025-07-28_all-samples-new-pol-avg-false_2026-02-25_21h03m.rds"
+model_name      <- "rf-model_4t_012014-012015-013014-013015_2y_2023-08-01_2025-07-31_after-apocalypse-agrupado_2026-06-29_11h47m.rds"
 tiles           <- c("012014")
-version         <- "rf-all-samples-new-pol-avg-false"
+version         <- "rf-2y-after-apocalypse-agrupado-mean"
 
 # define and load model path
 models <- c("rf"   = "random_forest",
@@ -33,12 +33,21 @@ model            <- readRDS(model_path)
 class_dir       <- "data/class"
 output_dir      <- "data/raw/samples/validation_samples"
 mask_dir        <- "data/raw/auxiliary/masks"
+prodes_dir      <- "data/raw/prodes-2025"
 
 # define segments path
 pattern          <- sprintf(".*_(%s)_", paste(tiles, collapse = "|"))
 seg_path         <- list.files("data/segments",
                                pattern = pattern,
                                full.names = TRUE)
+
+# List the PRODES reference polygons 
+ref_prodes <- list.files(
+  prodes_dir,
+  pattern    = paste0(".*", tiles, ".*\\.gpkg$"),
+  full.names = TRUE,
+  recursive  = TRUE
+)
 
 # Define function to create validation
 sits_validation_sampling <- function(
@@ -50,6 +59,7 @@ sits_validation_sampling <- function(
     progress      = TRUE,
     multicores    = 8,
     polygons      = polygons,
+    prodes        = read_sf(ref_prodes),
     output_dir,
     version,
     date_process  = format(Sys.Date(), "%Y-%m-%d")
@@ -103,6 +113,60 @@ sits_validation_sampling <- function(
         left = FALSE
       )
     
+    # ── Análise de Interseção com o PRODES ────────────────────────────────────
+    if (!is.null(prodes)) {
+      cli::cli_inform("Calculating PRODES intersection percentages...")
+      
+      # Garantir que o PRODES use a mesma projeção dos polígonos
+      prodes_crs <- sf::st_transform(prodes, sf::st_crs(validation_polygons))
+      
+      if (nrow(prodes_crs) > 0) {
+        # Corrigir geometrias inválidas e converter em partes simples (POLYGON)
+        prodes_single <- prodes_crs |> 
+          sf::st_make_valid() |> 
+          sf::st_cast("POLYGON")
+        
+        # Criar IDs temporários e calcular a área original de cada polígono de validação
+        validation_polygons$tmp_id    <- 1:nrow(validation_polygons)
+        validation_polygons$poly_area <- as.numeric(sf::st_area(validation_polygons))
+        
+        # Realizar a interseção geométrica detalhada
+        suppressWarnings({
+          intersections <- sf::st_intersection(
+            validation_polygons[, c("tmp_id", "poly_area")], 
+            prodes_single
+          )
+        })
+        
+        if (nrow(intersections) > 0) {
+          # Calcular a área de cada fragmento intersectado
+          intersections$int_area <- as.numeric(sf::st_area(intersections))
+          
+          # Somar as áreas de interseção caso um polígono toque em mais de uma parte simples do PRODES
+          prodes_cover <- intersections |>
+            sf::st_drop_geometry() |>
+            dplyr::group_by(tmp_id) |>
+            dplyr::summarise(total_int_area = sum(int_area), .groups = "drop")
+          
+          # Cruzar de volta os dados e calcular o percentual final na coluna "prodes"
+          validation_polygons <- validation_polygons |>
+            dplyr::left_join(prodes_cover, by = "tmp_id") |>
+            dplyr::mutate(
+              prodes = (tidyr::replace_na(total_int_area, 0) / poly_area) * 100,
+              prodes = round(prodes, 2) # Limita a duas casas decimais
+            ) |>
+            dplyr::select(-tmp_id, -poly_area, -total_int_area)
+        } else {
+          # Se não houve interseção real de área
+          validation_polygons$prodes <- 0
+          validation_polygons <- validation_polygons |> dplyr::select(-tmp_id, -poly_area)
+        }
+      } else {
+        # Se o objeto PRODES fornecido estiver vazio
+        validation_polygons$prodes <- 0
+      }
+    }
+    
     polygons_path <- file.path(
       output_dir,
       paste0("validation-samples_polygons_", file_suffix, ".gpkg")
@@ -132,7 +196,7 @@ sits_validation_sampling <- function(
     dplyr::select(-alloc_val) |>
     dplyr::left_join(
       samples_count,
-      by = dplyr::join_by(class == label)
+      by = dplyr::join_by(class == sits_label)
     )
   
   xlsx_path <- file.path(
@@ -346,21 +410,15 @@ sampling_design <- sits_sampling_design(
   cube = cube,
   expected_ua = c(
     "Corpo_Dagua"                           = 0.95,
-    "Corte_Raso_Com_Arvores_Remanescentes"  = 0.10,
-    "Corte_Raso"                            = 0.70,
-    "Corte_Raso_Antigo"                     = 0.85,
-    "Corte_Raso_Com_Vegetacao"              = 0.70,
-    "Corte_Raso_Antigo_Com_Vegetacao"       = 0.85,
+    "Corte_Raso_Com_Herbacea"               = 0.70,
+    "Corte_Raso_Com_Solo_Exposto"           = 0.70,
     "Degradacao"                            = 0.70,
-    "Degradacao_Por_Fogo"                   = 0.70,
     "Floresta"                              = 0.95,
-    "Floresta_Transicional"                 = 0.70,  
-    "Vegetacao_Natural_Nao_Florestal"       = 0.70,
-    "Area_Inundavel"                        = 0.70
+    "Vegetacao_Natural_Nao_Florestal"       = 0.70
   ),
   alloc_options = c(120, 100, 75, 50, 30),
   std_err = 0.01,
-  rare_class_prop = 0.025
+  rare_class_prop = 0.015
 )
 
 # Step 3.2 -- Show Full Map sampling design
@@ -371,11 +429,12 @@ result_all_classes <- sits_validation_sampling(
   cube            = cube,
   sampling_design = sampling_design,
   validation_type = "all-classes",
-  alloc           = "alloc_50",
+  alloc           = "alloc_100",
   overhead        = 1.2,
   progress        = TRUE,
   multicores      = 12,
   polygons        = polygons,
+  prodes          = sf::read_sf(ref_prodes),
   output_dir     = output_dir,
   version         = version,
   date_process    = format(Sys.Date(), "%Y-%m-%d")
@@ -465,6 +524,7 @@ result_grouped <- sits_validation_sampling(
   progress        = TRUE,
   multicores      = 12,
   polygons        = polygons,
+  prodes          = sf::read_sf(ref_prodes),
   output_dir      = output_dir,
   version         = version,
   date_process    = format(Sys.Date(), "%Y-%m-%d")
