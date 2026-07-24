@@ -10,7 +10,7 @@ library(sits)
 # Define the parameters: These are user-defined variables
 start_date <- '2025-07-01'
 end_date   <- '2025-07-31'
-tiles      <- '014002'
+tiles      <- '014002' # accepts one more tile at a time
 n_cores    <- 28
 
 sits_parallel(workers = n_cores)
