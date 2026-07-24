@@ -10,16 +10,16 @@ library(terra)
 library(RColorBrewer)
 
 # Define the parameters: These are user-defined variables
-model_name    <- "rf-model_4t_012014-012015-013014-013015_1y_2024-07-27_2025-07-28_all-samples-new-pol-avg-false_2026-02-25_21h03m.rds"
-seg_version   <- "lsmm-snic-spac10-comp03-pad0-rectangular"# SITS recognizes "underline" as a separator of information. Use only for this purpose.
+model_name    <- "rf-model_4t_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_after-apocalypse_2026-06-29_18h27m.rds"
+seg_version   <- "lsmm-snic-spac10-comp03-pad0-rectangular" # SITS reconhece "underline" como separador. Usar só para isso.
 label_method  <- "mean"
 
 # List of tiles to process
-tile <- c("012014")#, "022009") # one tile per classification run
+tiles <- c("012014", "012015", "013014") # accepts one more tile at a time
 
 # Extract the date of the string separated by "_"
-start_date <- stringr::str_split_i(model_name, "_", 4)
-end_date   <- stringr::str_split_i(model_name, "_", 5)
+start_date <- stringr::str_split_i(model_name, "_", 5)
+end_date   <- stringr::str_split_i(model_name, "_", 6)
 
 # File and folder paths 
 models <- c("rf"   = "random_forest",
@@ -28,99 +28,157 @@ models <- c("rf"   = "random_forest",
             "tcnn" = "temp_cnn",
             "rnet" = "res_net",
             "lstm" = "ltsm")
-model_type    <- stringr::str_split_i(model_name, "-", 1)
-model_path    <- file.path("data/rds/model", models[model_type], model_name)
-vector_path   <- "data/segments"
-class_path    <- "data/class"
-plots_path    <- "data/plots/accuracy"
-n_cores       <- 28
+model_type   <- stringr::str_split_i(model_name, "-", 1)
+model_path   <- file.path("data/rds/model", models[model_type], model_name)
+vector_path  <- "data/segments"
+class_path   <- "data/class"
+plots_path   <- "data/plots/accuracy"
+log_path     <- "data/logs"
+n_cores      <- 28
+
+dir.create(log_path, recursive = TRUE, showWarnings = FALSE)
+log_file <- file.path(log_path, paste0("erros_classificacao_",
+                                       format(Sys.time(), "%Y-%m-%d_%Hh%Mm"),
+                                       ".txt"))
 
 sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous runs
 var <- stringr::str_split_i(model_name, "_", 7)
 
-# ============================================================
-# 1. Define and Load Data Cubes
-# ============================================================
-
-# Step 1.1 -- Create a classification cube from a collection
-cube <- sits_cube(
-  source      = "BDC",
-  collection  = "SENTINEL-2-16D",
-  bands       = c('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A',
-                  'B11', 'B12', 'NDVI', 'NBR', 'EVI', 'CLOUD'),
-  tiles       = tile,
-  start_date  = start_date,
-  end_date    = end_date,
-  progress    = TRUE)
-
-# Step 1.2 -- Extract tiles and duration from the cube (in years)
+# Cube duration in years (independent of the tile)
 no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
 
-# Step 1.3 -- Create a local segmented cube based on previous segmentation results
-local_segs_cube <- sits_cube(
-  source      = "BDC",
-  collection  = "SENTINEL-2-16D",
-  raster_cube = cube,
-  vector_dir  = vector_path,
-  vector_band = "segments",
-  version     = seg_version,
-  parse_info  = c("satellite", "sensor","tile", "start_date", 
-                  "end_date", "band", "version", "X1"))
-
-
-# Step 1.4 -- Create output directory per tile
-tile_period_dir <- file.path(class_path, tile, "original_class",
-                             models[model_type], paste(no.years,
-                                                       var,
-                                                       sep = "-")
-                             )
-dir.create(tile_period_dir, recursive = TRUE, showWarnings = FALSE)
-
-# ============================================================
-# 2. Probability and Classification Mapping
-# ============================================================
-
-# Step 2.1 -- Retrieve the trained model
+# Load the model once (shared across all tiles)
 model <- readRDS(model_path)
 
-# Step 2.2 -- Define the version name of probability file
-version <- paste(model_type, no.years, var, sep = "-")
-
-# Step 2.3 -- Set a seed of random number generator (RNG) for reproducibility
-set.seed(88)
-
-# Step 2.4 -- Classify segments according to the probabilities and calculate the process duration
-class_prob <- sits_classify(
-  data        = local_segs_cube,
-  ml_model    = model,
-  multicores  = n_cores, # adapt to your computer CPU core availability
-  memsize     = 180, # adapt to your computer memory availability
-  output_dir  = tile_period_dir,
-  version     = version,
-  n_sam_pol   = 16, # Number of time series per segment to be classified (integer, min = 10, max = 50)
-  verbose     = TRUE,
-  progress    = TRUE
-)
-
-# Step 2.5 -- Generate Final Classified Map of Segments
-class_map <- sits_label_classification(
-  cube         = class_prob,
-  output_dir   = tile_period_dir, 
-  label_method = label_method,
-  version      = paste(version, label_method, sep = '-'),,
-  multicores   = n_cores,  # adapt to your computer CPU core availability
-  memsize      = 180, # adapt to your computer memory availability
-  progress     = TRUE
-)
-print("Classification finished!")
-
 # ============================================================
-# 3. Uncertainty
+# 1. Helper function: logs errors to the log file and the console
 # ============================================================
 
-# Step 3.1 -- Define function to calculate entropy, rasterize and exclude .gpkg
+log_erro <- function(tile, etapa, cond) {
+  msg <- sprintf(
+    "[%s] TILE: %s | ETAPA: %s | ERRO: %s\n",
+    format(Sys.time(), "%Y-%m-%d %H:%M:%S"), tile, etapa, conditionMessage(cond)
+  )
+  cat(msg)
+  cat(msg, file = log_file, append = TRUE)
+}
+
+# ============================================================
+# 2. Main loop: a complete classification for each tile
+# ============================================================
+
+resultados <- list()
+for (tile in tiles) {
+  
+  cat("\n==============================\n")
+  cat("Iniciando tile:", tile, "\n")
+  cat("==============================\n")
+  
+  # tryCatch wraps the entire tile pipeline.
+  # If any step (cube, segmentation, classification, or labeling)
+  # fails, it goes to the "error =" handler, logs the issue, and the for() loop continues to the next tile.
+  resultado_tile <- tryCatch({
+    
+    # --- 2.1 Raw tile cube ---
+    cube <- sits_cube(
+      source     = "BDC",
+      collection = "SENTINEL-2-16D",
+      bands      = c('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A',
+                     'B11', 'B12', 'NDVI', 'NBR', 'EVI', 'CLOUD'),
+      tiles      = tile,
+      start_date = start_date,
+      end_date   = end_date,
+      progress   = TRUE
+    )
+    
+    # --- 2.2 Local segmented cube (based on previous segmentation) ---
+    local_segs_cube <- sits_cube(
+      source      = "BDC",
+      collection  = "SENTINEL-2-16D",
+      raster_cube = cube,
+      vector_dir  = vector_path,
+      vector_band = "segments",
+      version     = seg_version,
+      parse_info  = c("satellite", "sensor", "tile", "start_date",
+                      "end_date", "band", "version", "X1")
+    )
+    
+    # --- 2.3 Tile output directory ---
+    tile_period_dir <- file.path(class_path, tile, "original_class",
+                                 models[model_type],
+                                 paste(no.years, var, sep = "-"))
+    dir.create(tile_period_dir, recursive = TRUE, showWarnings = FALSE)
+    
+    # --- 2.4 Probability file version ---
+    version <- paste(model_type, no.years, var, sep = "-")
+    
+    # --- 2.5 Seed for reproducibility ---
+    set.seed(88)
+    
+    cat("Classifing...")
+    # --- 2.6 Classification ---
+    class_prob <- sits_classify(
+      data       = local_segs_cube,
+      ml_model   = model,
+      multicores = n_cores,
+      memsize    = 180,
+      output_dir = tile_period_dir,
+      version    = version,
+      n_sam_pol  = 16,
+      verbose    = TRUE,
+      progress   = TRUE
+    )
+    cat("Labeling...")
+    # --- 2.7 Final labeling ---
+    class_map <- sits_label_classification(
+      cube         = class_prob,
+      output_dir   = tile_period_dir,
+      label_method = label_method,
+      version      = paste(version, label_method, sep = "-"),
+      multicores   = n_cores,
+      memsize      = 180,
+      progress     = TRUE
+    )
+    cat("Tile", tile, "finalizada com sucesso!\n")
+    list(status = "ok", tile = tile)
+    
+    rm(class_prob)
+    rm(class_map)
+    gc()
+  }, error = function(e) {
+    log_erro(tile, "pipeline_completa", e)
+    list(status = "erro", tile = tile, mensagem = conditionMessage(e))
+    rm(class_prob)
+    rm(class_map)
+    gc()
+  })
+}
+
+# ============================================================
+# 4. Final round summary
+# ============================================================
+
+status_vec <- vapply(resultados, function(x) x$status, character(1))
+
+cat("\n================ RESUMO FINAL ================\n")
+cat("Tiles processadas com sucesso:",
+    paste(names(status_vec[status_vec == "ok"]), collapse = ", "), "\n")
+cat("Tiles com erro:",
+    paste(names(status_vec[status_vec == "erro"]), collapse = ", "), "\n")
+if (any(status_vec == "erro")) {
+  cat("Detalhes dos erros disponíveis em:", log_file, "\n")
+}
+cat("================================================\n")
+                   
+print("Classificação de múltiplos tiles finalizada!")
+
+# ============================================================
+# 5. Uncertainty
+# ============================================================
+
+# Step 5.1 -- Define function to calculate entropy, rasterize and exclude .gpkg
 compute_uncertainty_raster <- function(
     vector_cube,
     tile_period_dir,
@@ -196,7 +254,7 @@ compute_uncertainty_raster <- function(
   invisible(tif_path)
 }
 
-# Step 3.2 -- Run function to calculate entropy, rasterize and exclude .gpkg
+# Step 5.2 -- Run function to calculate entropy, rasterize and exclude .gpkg
 compute_uncertainty_raster(
   vector_cube     = vector_cube,
   tile_period_dir = tile_period_dir,
@@ -207,10 +265,10 @@ compute_uncertainty_raster(
 )
 
 # ============================================================
-# 4. Plot Uncertainty Blox-Plots
+# 6. Plot Uncertainty Blox-Plots
 # ============================================================
 
-# Step 4.1 -- Define function to plot uncertainty by class box-plots
+# Step 6.1 -- Define function to plot uncertainty by class box-plots
 plot_uncertainty_boxplot <- function(
     output_dir,
     band_uncertainty  = "entropy",
@@ -364,7 +422,7 @@ plot_uncertainty_boxplot <- function(
   invisible(p)
 }
 
-# Step 4.2 -- Run function
+# Step 6.2 -- Run function
 plot_uncertainty_boxplot(
   output_dir        = tile_period_dir,
   tile              = tile,
