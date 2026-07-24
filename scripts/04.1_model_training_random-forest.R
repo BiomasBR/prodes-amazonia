@@ -78,8 +78,10 @@ process_version <- paste0(date_process, time_process)
 # File and folder paths
 time_series_path  <- file.path("data/rds/time_series/", time_series_name)
 rds_path          <- "data/rds/"
-plots_dir        <- "data/plots/model_rf"
+plots_dir         <- "data/plots/model_rf"
 config_dir        <- ".."
+n_cores           <- 28
+sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous versions
 var <- stringr::str_split_i(time_series_name, "_", 6)
@@ -102,7 +104,7 @@ rfor_validate <- sits_kfold_validate(
   samples = train_samples,
   folds = 5, # how many times to split the data (default = 5)
   ml_method = sits_rfor(),
-  multicores = 28,
+  multicores = n_cores,
   progress = TRUE) # adapt to your computer CPU core availability
 sits_kfold_validate_end <- Sys.time()
 sits_kfold_validate_time <- as.numeric(sits_kfold_validate_end - sits_kfold_validate_start, units = "secs")
