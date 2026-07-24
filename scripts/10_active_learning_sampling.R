@@ -64,7 +64,7 @@ uncert_sf <- sits_uncertainty_sampling(
   n = n_samples,
   min_uncert = min_uncert,
   sampling_window = 10L,
-   = n_cores,
+  multicores = n_cores,
   memsize = 180
 )
 
