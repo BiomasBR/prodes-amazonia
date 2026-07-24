@@ -12,11 +12,14 @@ library(RColorBrewer)
 # Define the parameters: These are user-defined variables
 model_name    <- "rf-model_4t_012014-012015-013014-013015_1y_2024-07-27_2025-07-28_all-samples-new-pol-avg-false_2026-02-25_21h03m.rds"
 seg_version   <- "lsmm-snic-spac10-comp03-pad0-rectangular"# SITS recognizes "underline" as a separator of information. Use only for this purpose.
-tile          <- "012014" # one tile per classification run
+label_method  <- "mean"
+
+# List of tiles to process
+tile <- c("012014")#, "022009") # one tile per classification run
 
 # Extract the date of the string separated by "_"
-start_date <- stringr::str_split_i(model_name, "_", 5)
-end_date   <- stringr::str_split_i(model_name, "_", 6)
+start_date <- stringr::str_split_i(model_name, "_", 4)
+end_date   <- stringr::str_split_i(model_name, "_", 5)
 
 # File and folder paths 
 models <- c("rf"   = "random_forest",
@@ -32,6 +35,7 @@ class_path    <- "data/class"
 mixture_path  <- "data/raw/mixture_model"
 plots_path    <- "data/plots/accuracy"
 n_cores       <- 28
+
 sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous runs
@@ -92,35 +96,24 @@ set.seed(88)
 class_prob <- sits_classify(
   data        = local_segs_cube,
   ml_model    = model,
-  multicores  = n_cores,  # adapt to your computer CPU core availability
+  multicores  = n_cores, # adapt to your computer CPU core availability
   memsize     = 180, # adapt to your computer memory availability
   output_dir  = tile_period_dir,
   version     = version,
-  n_sam_pol   = 16, #  Number of time series per segment to be classified (integer, min = 10, max = 50)
+  n_sam_pol   = 16, # Number of time series per segment to be classified (integer, min = 10, max = 50)
   verbose     = TRUE,
   progress    = TRUE
 )
 
-# Step 2.5 -- Reconstruct vector cube with classification probabilities 
-vector_cube <- sits_cube(
-  source      = "BDC",
-  collection  = "SENTINEL-2-16D",
-  raster_cube = cube,
-  vector_dir  = tile_period_dir,
-  vector_band = "probs",
-  version     = version, # do not use underline character
-  parse_info  = c("X1", "X2", "tile", "start_date",
-                  "end_date", "band", "version")
-)
-
-# Step 2.6 -- Generate Final Classified Map of Segments
+# Step 2.5 -- Generate Final Classified Map of Segments
 class_map <- sits_label_classification(
-  cube        = class_prob,
-  output_dir  = tile_period_dir,
-  version     = version,
-  multicores  = n_cores,  # adapt to your computer CPU core availability
-  memsize     = 180, # adapt to your computer memory availability
-  progress    = TRUE
+  cube         = class_prob,
+  output_dir   = tile_period_dir, 
+  label_method = label_method,
+  version      = paste(version, label_method, sep = '-'),,
+  multicores   = n_cores,  # adapt to your computer CPU core availability
+  memsize      = 180, # adapt to your computer memory availability
+  progress     = TRUE
 )
 print("Classification finished!")
 
