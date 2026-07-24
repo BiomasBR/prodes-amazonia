@@ -13,8 +13,10 @@ library(stringr)
 library(purrr)
 
 # Define the parameters: These are user-defined variables
-tiles      = '000000'
-model_name <- "rf-model_2t_014002-015002_2y_2023-07-28_2025-07-28_com-nuvens-cheias_2026-04-07_14h45m.rds"
+tiles        = '000000'
+model_name   <- "rf-model_2t_014002-015002_2y_2023-07-28_2025-07-28_com-nuvens-cheias_2026-04-07_14h45m.rds"
+n_cores      <- 28
+sits_parallel(workers = n_cores)
 
 # Extract the date of the string separated by "_"
 start_date <- stringr::str_split_i(model_name, "_", 5)
@@ -221,7 +223,7 @@ samples_validation <- st_read(grep(".*_all-classes_*.",
 full_map_acc <- sits_accuracy(cube,
                               validation = samples_validation,
                               memsize = 180,
-                              multicores = 28) # adapt to your computer CPU core availability
+                              multicores = n_cores) # adapt to your computer CPU core availability
 
 # Step 1.4 -- Print the area estimated accuracy
 full_map_acc
@@ -267,7 +269,7 @@ samples_validation <- st_read(grep(".*_prodes_*.",
 prodes_acc <- sits_accuracy(class_cube, 
                             validation = samples_validation,
                             memsize = 180,
-                            multicores = 28) # adapt to your computer CPU core availability
+                            multicores = n_cores) # adapt to your computer CPU core availability
 
 # Step 2.4 -- Print the area estimated accuracy
 prodes_acc
