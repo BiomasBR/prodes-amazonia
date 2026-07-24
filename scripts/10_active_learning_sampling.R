@@ -8,10 +8,12 @@ library(sf)
 library(purrr)
 
 # Define the parameters: These are user-defined variables
-n_samples   <- 100
-min_uncert  <- 0.7
-tiles       <- c("012014", "012015", "013014", "013015")
-version     <- "rf-1y-all-classes"
+n_samples    <- 100
+min_uncert   <- 0.7
+tiles        <- c("012014", "012015", "013014", "013015")
+version      <- "rf-1y-all-classes"
+n_cores      <- 28
+sits_parallel(workers = n_cores)
 
 # Date and time of the start of processing
 date_process    <- format(Sys.Date(), "%Y-%m-%d")
@@ -62,7 +64,7 @@ uncert_sf <- sits_uncertainty_sampling(
   n = n_samples,
   min_uncert = min_uncert,
   sampling_window = 10L,
-  multicores = 28,
+   = n_cores,
   memsize = 180
 )
 
