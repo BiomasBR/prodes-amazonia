@@ -32,7 +32,6 @@ model_type    <- stringr::str_split_i(model_name, "-", 1)
 model_path    <- file.path("data/rds/model", models[model_type], model_name)
 vector_path   <- "data/segments"
 class_path    <- "data/class"
-mixture_path  <- "data/raw/mixture_model"
 plots_path    <- "data/plots/accuracy"
 n_cores       <- 28
 
