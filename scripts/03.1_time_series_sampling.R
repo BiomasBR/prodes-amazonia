@@ -14,6 +14,8 @@ start_date      <- "2024-08-01"
 end_date        <- "2025-07-31"
 var             <- "all-samples-new-pol-avg-false" #ALWAYS SPACE THE WORDS WITH "-"
 sampling_date   <- "2026-02-24"                    # Date of the sampling file (YYYY-MM-DD)
+n_cores         <- 28
+sits_parallel(workers = n_cores)
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -127,7 +129,7 @@ samples <- sits_get_data(
   n_sam_pol   = 16,
   pol_avg     = FALSE,
   label       = "label",
-  multicores  = 28,       # adapt to your computer CPU core availability
+  multicores  = n_cores,       # adapt to your computer CPU core availability
   progress    = TRUE)
 sits_get_data_end <- Sys.time()
 sits_get_data_time <- as.numeric(sits_get_data_end - sits_get_data_start, units = "secs")
