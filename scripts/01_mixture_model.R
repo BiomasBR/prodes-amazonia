@@ -8,9 +8,11 @@ library(tibble)
 
 # Paths for files and folders
 mixture_path <- "data/raw/mixture_model"
-tiles      = c('012014', '012015', '013014', '013015')
-start_date = '2024-08-01'
-end_date   = '2025-07-31'
+tiles        = c('012014', '012015', '013014', '013015')
+start_date   = '2024-08-01'
+end_date     = '2025-07-31'
+n_cores      <- 28
+sits_parallel(workers = n_cores)
 
 # ============================================================
 # 1. Define and Load Raster Data Cubes from a collection
@@ -42,8 +44,8 @@ sits_mixture_model_start <- Sys.time()
 mm_cube <- sits_mixture_model(
   data       = cube,
   endmembers = endmembers,
-  multicores = 28,  # adapt to your computer CPU core availability
-  memsize    = 180, # adapt to your computer memory availability
+  multicores = n_cores,  # adapt to your computer CPU core availability
+  memsize    = 180,      # adapt to your computer memory availability
   output_dir = mixture_path
 )
 sits_mixture_model_end  <- Sys.time()
