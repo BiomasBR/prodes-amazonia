@@ -12,6 +12,7 @@ start_date <- '2025-07-01'
 end_date   <- '2025-07-31'
 tiles      <- '014002'
 n_cores    <- 28
+
 sits_parallel(workers = n_cores)
 
 # Parameters for SNIC segmentation
