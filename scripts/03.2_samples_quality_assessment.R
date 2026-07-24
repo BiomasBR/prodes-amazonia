@@ -19,7 +19,7 @@ process_version <- paste0(format(Sys.Date(), "%Y-%m-%d_"), format(Sys.time(), "%
 rds_path      <- "data/rds"
 rds_filename  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_after-apocalypse-agrupado_2026-06-29_10h48m.rds"
 config_dir    <- "../scripts"
-plots_dir    <- "data/plots/som"
+plots_dir     <- "data/plots/som"
 
 # Step 1.4 -- Identifier to distinguish this model run from previous versions
 no.years <- strsplit(rds_filename, "_")[[1]][3]
@@ -33,7 +33,6 @@ dir.create(plots_path, recursive = TRUE, showWarnings = FALSE)
 
 # Step 1.7 -- Extracts the list of tiles
 tiles <- gsub(".*_(\\d{6}(-\\d{6})*)_.*", "\\1", rds_filename)
-
 
 # ============================================================
 # 2. Load and Translate Training Samples Dataset
@@ -102,7 +101,6 @@ names(my_colors) <- nomes_em_pt
 
 # Step 2.5 -- Filter features
 my_colors <- my_colors[names(my_colors) %in% unique(samples$label)]
-
 
 # ============================================================
 # 3. Self-Organizing Map (SOM - 1)
@@ -231,7 +229,6 @@ som1 <- som_analysis_1(
 som_cluster <- som1$som_cluster
 som_eval    <- som1$som_eval
 
-
 # ============================================================
 # 4. Analyse Quality (and Clean) Samples
 # ============================================================
@@ -328,7 +325,6 @@ cleaned_samples <- samples_quality %>%
 saveRDS(cleaned_samples, 
         paste0(rds_path, "/time_series/", 
                "TS-cleaned-samples_", tiles, "_", var,"-", no.years, "_", process_version, ".rds"))
-
 
 # ============================================================
 # 5. Self-Organizing Map (SOM - 2)
@@ -461,7 +457,6 @@ som2 <- som_analysis_2(
 # Step 5.4 -- Returns 'som_cluster_cleaned' and 'som2_eval_clean' objects from SOM analysis 2
 som_cluster_cleaned <- som2$som_cluster_clean
 som2_eval_clean    <- som2$som2_eval_clean
-
 
 # ============================================================
 # 6. Reduce imbalance among classes
