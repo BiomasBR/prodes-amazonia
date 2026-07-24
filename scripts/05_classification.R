@@ -31,6 +31,8 @@ vector_path   <- "data/segments"
 class_path    <- "data/class"
 mixture_path  <- "data/raw/mixture_model"
 plots_path    <- "data/plots/accuracy"
+n_cores       <- 28
+sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous runs
 var <- stringr::str_split_i(model_name, "_", 7)
@@ -90,7 +92,7 @@ set.seed(88)
 class_prob <- sits_classify(
   data        = local_segs_cube,
   ml_model    = model,
-  multicores  = 28,  # adapt to your computer CPU core availability
+  multicores  = n_cores,  # adapt to your computer CPU core availability
   memsize     = 180, # adapt to your computer memory availability
   output_dir  = tile_period_dir,
   version     = version,
@@ -116,7 +118,7 @@ class_map <- sits_label_classification(
   cube        = class_prob,
   output_dir  = tile_period_dir,
   version     = version,
-  multicores  = 28,  # adapt to your computer CPU core availability
+  multicores  = n_cores,  # adapt to your computer CPU core availability
   memsize     = 180, # adapt to your computer memory availability
   progress    = TRUE
 )
@@ -131,7 +133,7 @@ compute_uncertainty_raster <- function(
     vector_cube,
     tile_period_dir,
     version,
-    multicores = 28,
+    multicores = n_cores,
     memsize    = 180,
     delete_gpkg = TRUE
 ) {
@@ -140,7 +142,7 @@ compute_uncertainty_raster <- function(
   sits_uncertainty(
     vector_cube,
     type       = "entropy",
-    multicores = multicores,
+    multicores = n_cores,
     memsize    = memsize,
     output_dir = tile_period_dir,
     version    = version,
@@ -207,7 +209,7 @@ compute_uncertainty_raster(
   vector_cube     = vector_cube,
   tile_period_dir = tile_period_dir,
   version         = version,
-  multicores      = 28, # adapt to your computer CPU core availability
+  multicores      = n_cores, # adapt to your computer CPU core availability
   memsize         = 180, # adapt to your computer CPU core availability
   delete_gpkg     = TRUE  # Keep the .gpkg file if you want to inspect it beforehand
 )
