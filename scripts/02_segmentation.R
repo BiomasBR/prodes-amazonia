@@ -11,6 +11,8 @@ library(sits)
 start_date <- '2025-07-01'
 end_date   <- '2025-07-31'
 tiles      <- '014002'
+n_cores    <- 28
+sits_parallel(workers = n_cores)
 
 # Parameters for SNIC segmentation
 grid_seeding <- "rectangular"
@@ -79,7 +81,7 @@ mm_cube_segments <- sits_segment(
     padding      = padding
   ),
   memsize    = 180,
-  multicores = 28,
+  multicores = n_cores,
   output_dir = segments_path,
   version    = version
 )
