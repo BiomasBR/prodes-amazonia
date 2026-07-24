@@ -132,7 +132,7 @@ ggplot2::ggsave(
     plots_dir,
     paste0(
       "Kfold-confusion-matrix_",
-      tiles_train, "_",
+      no.tiles, "_",
       start_date, "_", end_date, "_",
       var, "_",
       format(Sys.Date(), "%Y-%m-%d"),
@@ -153,7 +153,7 @@ ggplot2::ggsave(
     plots_dir,
     paste0(
       "Kfold-metrics_",
-      tiles_train, "_",
+      no.tiles, "_",
       start_date, "_", end_date, "_",
       var, "_",
       format(Sys.Date(), "%Y-%m-%d"),
@@ -184,7 +184,7 @@ rf_model <- sits_train(
 saveRDS(rf_model,
         paste0(rds_path, "model/random_forest/",
                paste("rf-model", no.tiles,
-                     tiles_train, no.years,
+                     no.years,
                      start_date, end_date,
                      var, process_version, sep = "_"),
                ".rds"))
