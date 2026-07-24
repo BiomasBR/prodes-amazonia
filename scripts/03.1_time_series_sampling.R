@@ -12,9 +12,10 @@ library(ggplot2)
 tiles           <- c("012014","012015","013014","013015")
 start_date      <- "2024-08-01"
 end_date        <- "2025-07-31"
-var             <- "all-samples-new-pol-avg-false" #ALWAYS SPACE THE WORDS WITH "-"
+var             <- "all-samples-new-pol-avg-false" # ALWAYS SPACE THE WORDS WITH "-"
 sampling_date   <- "2026-02-24"                    # Date of the sampling file (YYYY-MM-DD)
 n_cores         <- 28
+
 sits_parallel(workers = n_cores)
 
 # Function to read class names and their colors::IMPORTANT
@@ -70,7 +71,7 @@ read_class_config <- function(config_file = "class_config.txt") {
 sample_path   <- "data/raw/samples"
 ts_path       <- "data/rds/time_series/"
 mixture_path  <- "data/raw/mixture_model"
-plots_dir    <- "data/plots/time_series"
+plots_dir     <- "data/plots/time_series"
 config_dir    <- ".."
 
 # ============================================================
