@@ -10,17 +10,27 @@ library(luz)
 library(stringr)
 
 # Define the parameters: These are user-defined variables
-time_series_name  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-02-24_20h01m.rds"
+time_series_name  <- "TS-tiles_2y_2023-08-01_2025-08-13_eco-3-mt-48d_2026-07-29_14h00m.rds"
 
 # Extract the tiles and date of the string separated by "_"
-tiles      <- str_split(str_extract(time_series_name, "(?<=tiles_)[^_]+"), "-")[[1]]
-start_date <- stringr::str_split_i(time_series_name, "_", 4)
-end_date   <- stringr::str_split_i(time_series_name, "_", 5)
+tiles             <- c("012014", "016012", "013014", "018018", "011016", "013015",
+                     "023017", "013013", "015011", "025013", "017013", "019015",
+                     "023016", "015013", "014013", "018016", "019018", "017016",
+                     "018015", "023015", "021015", "015016", "015015", "017018",
+                     "016015", "016016", "020015", "017012", "020013", "016021",
+                     "021013", "018012", "020017", "025015", "021014", "015017",
+                     "017021", "019013", "014014", "026012", "022016", "016013",
+                     "016019", "016018", "012017", "025017")
+
+# Extract the tiles and date of the string separated by "_"
+start_date <- stringr::str_split_i(time_series_name, "_", 3)
+end_date   <- stringr::str_split_i(time_series_name, "_", 4)
 
 # Calculate the number of years in the training cube
-no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
+no.years    <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
 tiles_train <- paste(sort(tiles), collapse = "-")
-no.cubes <- paste0(length(tiles_train), "t")
+no.cubes    <- paste0(length(tiles_train), "t")
+no.tiles    <- paste0(length(tiles), "t")
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -86,7 +96,7 @@ sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous versions
 var <- stringr::str_split_i(time_series_name, "_", 6)
-
+var <- paste0(var, "-default-model")
 # ============================================================
 # 1. Cross-validation of training data
 # ============================================================
@@ -184,7 +194,7 @@ tempcnn_model <- sits_train(
     
     # Training configuration
     epochs = 150,                            # number of training epochs
-    batch_size = 1024,                       # batch size for training
+    batch_size = 128,                       # batch size for training
     validation_split = 0.2,                  # proportion of data used for validation
     
     # Optimizer configuration (AdamW)
@@ -216,11 +226,14 @@ saveRDS(
     rds_path, "model/temp_cnn/",
     paste(
       "tcnn-model",
-      length(tiles),
-      tiles_train, no.years,
+      no.years,
       start_date, end_date,
       var, process_version,sep = "_"),
     ".rds"))
+
+
+# saveRDS(tempcnn_model,"~/grupos/biomasbr-amazonia/sits-prodes/prodes.amz/data/rds/model/temp_cnn/tcnn-model_46t_2y_2023-08-01_2025-08-13_default-model_2026-07-29_15h08m.rds")
+
 
 print("Model trained successfully!")
 
