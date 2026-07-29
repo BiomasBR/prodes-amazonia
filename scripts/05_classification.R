@@ -10,16 +10,14 @@ library(terra)
 library(RColorBrewer)
 
 # Define the parameters: These are user-defined variables
-model_name    <- "rf-model_4t_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_after-apocalypse_2026-06-29_18h27m.rds"
-seg_version   <- "lsmm-snic-spac10-comp03-pad0-rectangular" # SITS reconhece "underline" como separador. Usar só para isso.
-label_method  <- "mean"
-
-# List of tiles to process
-tiles <- c("012014", "012015", "013014") # accepts one more tile at a time
+tiles           <- c('012014', '012015', '013014', '013015')
+model_name      <- "rf-model_4t_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_after-apocalypse_2026-06-29_18h27m.rds"
+seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular" #SITS recognizes the underscore (_) character as a separator.
+label_method    <- "mean"
 
 # Extract the date of the string separated by "_"
-start_date <- stringr::str_split_i(model_name, "_", 5)
-end_date   <- stringr::str_split_i(model_name, "_", 6)
+start_date     <- stringr::str_split_i(model_name, "_", 5)
+end_date       <- stringr::str_split_i(model_name, "_", 6)
 
 # File and folder paths 
 models <- c("rf"   = "random_forest",
@@ -66,7 +64,7 @@ log_erro <- function(tile, etapa, cond) {
 }
 
 # ============================================================
-# 2. Main loop: a complete classification for each tile
+# 2. Loop: a complete classification for each tile
 # ============================================================
 
 resultados <- list()
@@ -142,26 +140,33 @@ for (tile in tiles) {
       progress     = TRUE
     )
     cat("Tile", tile, "finalizada com sucesso!\n")
-    list(status = "ok", tile = tile)
-    
+
+    # Clean up large objects before returning the status list,
+    # so the list() call stays the last (returned) expression.
     rm(class_prob)
     rm(class_map)
     gc()
+
+    list(status = "ok", tile = tile)
+
   }, error = function(e) {
     log_erro(tile, "pipeline_completa", e)
-    list(status = "erro", tile = tile, mensagem = conditionMessage(e))
-    rm(class_prob)
-    rm(class_map)
+
+    # Only remove objects that actually exist at the point of failure,
+    # so a partial pipeline doesn't throw a second error inside the handler.
+    if (exists("class_prob")) rm(class_prob)
+    if (exists("class_map"))  rm(class_map)
     gc()
+
+    list(status = "erro", tile = tile, mensagem = conditionMessage(e))
   })
+  
+  # Store the result indexed by tile name, so the summary below can
+  # look tiles up by name.
+  resultados[[tile]] <- resultado_tile
 }
 
-# ============================================================
-# 4. Final round summary
-# ============================================================
-
 status_vec <- vapply(resultados, function(x) x$status, character(1))
-
 cat("\n================ RESUMO FINAL ================\n")
 cat("Tiles processadas com sucesso:",
     paste(names(status_vec[status_vec == "ok"]), collapse = ", "), "\n")
@@ -171,14 +176,13 @@ if (any(status_vec == "erro")) {
   cat("Detalhes dos erros disponíveis em:", log_file, "\n")
 }
 cat("================================================\n")
-                   
 print("Classificação de múltiplos tiles finalizada!")
 
 # ============================================================
-# 5. Uncertainty
+# 3. Uncertainty
 # ============================================================
 
-# Step 5.1 -- Define function to calculate entropy, rasterize and exclude .gpkg
+# Step 3.1 -- Define function to calculate entropy, rasterize and exclude .gpkg
 compute_uncertainty_raster <- function(
     vector_cube,
     tile_period_dir,
@@ -254,7 +258,7 @@ compute_uncertainty_raster <- function(
   invisible(tif_path)
 }
 
-# Step 5.2 -- Run function to calculate entropy, rasterize and exclude .gpkg
+# Step 3.2 -- Run function to calculate entropy, rasterize and exclude .gpkg
 compute_uncertainty_raster(
   vector_cube     = vector_cube,
   tile_period_dir = tile_period_dir,
@@ -265,10 +269,10 @@ compute_uncertainty_raster(
 )
 
 # ============================================================
-# 6. Plot Uncertainty Blox-Plots
+# 4. Plot Uncertainty Blox-Plots
 # ============================================================
 
-# Step 6.1 -- Define function to plot uncertainty by class box-plots
+# Step 4.1 -- Define function to plot uncertainty by class box-plots
 plot_uncertainty_boxplot <- function(
     output_dir,
     band_uncertainty  = "entropy",
@@ -409,7 +413,7 @@ plot_uncertainty_boxplot <- function(
     )
   
   # ---------------------------------------------------------------------------
-  # 6. Save plot
+  # 5. Save plot
   # ---------------------------------------------------------------------------
   if (save_plot) {
     dir.create(plots_path, showWarnings = FALSE, recursive = TRUE)
@@ -422,7 +426,7 @@ plot_uncertainty_boxplot <- function(
   invisible(p)
 }
 
-# Step 6.2 -- Run function
+# Step 5.1 -- Run function
 plot_uncertainty_boxplot(
   output_dir        = tile_period_dir,
   tile              = tile,
