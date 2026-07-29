@@ -6,27 +6,18 @@
 library(sits)
 library(ggplot2)
 library(stringr)
-library(tidyr)
 library(randomForestExplainer, lib.loc = "/opt/r/R/x86_64-pc-linux-gnu-library/4.4")
 
 # Define the parameters: These are user-defined variables
-time_series_name  <- "TS-tiles_2y_2023-08-01_2025-07-31_eco-mt-partial_2026-07-24_11h17m.rds"
+time_series_name <- "TS-tiles_2y_2023-08-01_2025-08-01_eco-3-mt-47d_2026-07-29_15h01m.rds"
 
 # Extract the tiles and date of the string separated by "_"
-tiles           <- c("012014", "016012", "013014", "018018", "011016", "013015",
-                     "023017", "013013", "015011", "025013", "017013", "019015",
-                     "023016", "015013", "014013", "018016", "019018", "017016",
-                     "018015", "023015", "021015", "015016", "015015", "017018",
-                     "016015", "016016", "020015", "017012", "020013", "016021",
-                     "021013", "018012", "020017", "025015", "021014", "015017",
-                     "017021", "019013", "014014", "026012", "022016", "016013",
-                     "016019", "016018", "012017", "025017")
-start_date <- stringr::str_split_i(time_series_name, "_", 3)
-end_date   <- stringr::str_split_i(time_series_name, "_", 4)
+start_date  <- stringr::str_split_i(time_series_name, "_", 3)
+end_date    <- stringr::str_split_i(time_series_name, "_", 4)
 
 # Calculate the number of years in the training cube
-no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
-no.tiles <- paste0(length(tiles), "t")
+no.years    <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
+no.tiles    <- paste0(stringr::str_split_i(time_series_name, "-", 2), "t")
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -78,20 +69,18 @@ read_class_config <- function(config_file = "class_config.txt") {
 }
 
 # Date and time of the start of processing
-date_process    <- format(Sys.Date(), "%Y-%m-%d_")
-time_process    <- format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo")
-process_version <- paste0(date_process, time_process)
+date_process      <- format(Sys.Date(), "%Y-%m-%d_")
+time_process      <- format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo")
+process_version   <- paste0(date_process, time_process)
 
 # File and folder paths
 time_series_path  <- file.path("data/rds/time_series/", time_series_name)
 rds_path          <- "data/rds/"
 plots_dir         <- "data/plots/model_rf"
 config_dir        <- ".."
-n_cores           <- 28
-sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous versions
-var <- stringr::str_split_i(time_series_name, "_", 6)
+var <- stringr::str_split_i(time_series_name, "_", 5)
 
 # ============================================================
 # 1. Cross-validation of training data
@@ -111,7 +100,7 @@ rfor_validate <- sits_kfold_validate(
   samples = train_samples,
   folds = 5, # how many times to split the data (default = 5)
   ml_method = sits_rfor(),
-  multicores = n_cores,
+  multicores = 28,
   progress = TRUE) # adapt to your computer CPU core availability
 sits_kfold_validate_end <- Sys.time()
 sits_kfold_validate_time <- as.numeric(sits_kfold_validate_end - sits_kfold_validate_start, units = "secs")
@@ -131,8 +120,7 @@ ggplot2::ggsave(
   filename = file.path(
     plots_dir,
     paste0(
-      "Kfold-confusion-matrix_",
-      no.tiles, "_",
+      "Kfold-confusion-matrix_", "_",
       start_date, "_", end_date, "_",
       var, "_",
       format(Sys.Date(), "%Y-%m-%d"),
@@ -152,8 +140,7 @@ ggplot2::ggsave(
   filename = file.path(
     plots_dir,
     paste0(
-      "Kfold-metrics_",
-      no.tiles, "_",
+      "Kfold-metrics_", "_",
       start_date, "_", end_date, "_",
       var, "_",
       format(Sys.Date(), "%Y-%m-%d"),
@@ -183,8 +170,7 @@ rf_model <- sits_train(
 # Step 2.3 -- Save the ML model to a R file
 saveRDS(rf_model,
         paste0(rds_path, "model/random_forest/",
-               paste("rf-model", no.tiles,
-                     no.years,
+               paste("rf-model", no.tiles, no.years,
                      start_date, end_date,
                      var, process_version, sep = "_"),
                ".rds"))
