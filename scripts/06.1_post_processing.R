@@ -210,7 +210,7 @@ extract_cloud_mask <- function(
   }
   
   # ----------------------------------------------------------
-  # 8. Retorno
+  # 8. Return
   # ----------------------------------------------------------
   return(
     invisible(
@@ -257,8 +257,7 @@ remove_cloud_areas <- function(
 }
 
 # ============================================================
-# 4. Main function: process ONE tile (equivalent to steps
-#    1.3 to 11 of the original script)
+# 4. Main function: process ONE tile
 # ============================================================
 
 process_tile <- function(tile) {
@@ -291,9 +290,9 @@ process_tile <- function(tile) {
   post_class_path <- file.path(class_path, tile, "post_processed", version)
   dir.create(post_class_path, showWarnings = FALSE, recursive = TRUE)
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 2. Classification Classes
-  # ============================================================
+  # ----------------------------------------------------------
   raw_class <- rast(raw_class_path)
   levels(raw_class) <- data.frame(
     ID = seq_along(sits_labels(model)),
@@ -328,9 +327,9 @@ process_tile <- function(tile) {
   vector_multipolygons <- aggregate(vector_class, by = "class")
   vector_multipolygons <- sf::st_as_sf(vector_multipolygons)
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 3. Extraction of cloud features
-  # ============================================================
+  # ----------------------------------------------------------
   result <- extract_cloud_mask(
     sits_classification_path = raw_class_path,
     sits_reclassification    = vector_multipolygons,
@@ -341,18 +340,18 @@ process_tile <- function(tile) {
   cloud_vec    <- result$cloud_vec
   end_date_scl <- result$end_date_scl
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 4. Cloud/shadow difference
-  # ============================================================
+  # ----------------------------------------------------------
   sits_classification_cloud_cleaned <- remove_cloud_areas(
     sits_reclassification = vector_multipolygons,
     cloud_vec             = cloud_vec,  # NULL se nao houver nuvens
     buffer_dist           = 100
   )
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 5. Fill holes < 1 hectare
-  # ============================================================
+  # ----------------------------------------------------------
   query <- sprintf("SELECT * FROM mask_geral_amz_v2024 WHERE tile = '%s'", tile)
   prodes_mask <- read_sf(mask_path, query = query)
   
@@ -377,9 +376,9 @@ process_tile <- function(tile) {
     threshold = units::set_units(10000, "m^2")
   )
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 6. Difference with deforestation mask
-  # ============================================================
+  # ----------------------------------------------------------
   smoothed <- sf::st_transform(smoothed, sf::st_crs(prodes_mask)) |>
     st_make_valid()
   
@@ -397,9 +396,9 @@ process_tile <- function(tile) {
     sf::st_cast("POLYGON") |>
     sf::st_sf()
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 7. Remove polygons outside the biome border
-  # ============================================================
+  # ----------------------------------------------------------
   biome_tile <- st_transform(biome, st_crs(class_diff_mask))
   
   if (tile %in% edge_tiles) {
@@ -410,9 +409,9 @@ process_tile <- function(tile) {
     class_biome <- class_diff_mask
   }
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 8. Remove polygons < 1 hectare
-  # ============================================================
+  # ----------------------------------------------------------
   class_biome$area_m2 <- as.numeric(sf::st_area(class_biome))
   class_biome$area_ha <- class_biome$area_m2 / 10000
   
@@ -426,9 +425,9 @@ process_tile <- function(tile) {
     sf::st_cast("POLYGON") |>
     sf::st_make_valid()
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 9. Assigns names of the classes with the greatest spatial intersection
-  # ============================================================
+  # ----------------------------------------------------------
   sf_use_s2(FALSE)
   
   vector_multipolygons_valid <- vector_multipolygons |>
@@ -452,9 +451,9 @@ process_tile <- function(tile) {
   
   sf_use_s2(TRUE)
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 10. Select Boundaries Segments
-  # ============================================================
+  # ----------------------------------------------------------
   vector_path <- list.files(
     "data/segments",
     pattern = paste0("SENTINEL-2_MSI_", tile, "_.*_segments_", seg_version, "\\.gpkg$"),
@@ -487,9 +486,9 @@ process_tile <- function(tile) {
   
   sf_use_s2(TRUE)
   
-  # ============================================================
+  # ----------------------------------------------------------
   # 11. Save final result
-  # ============================================================
+  # ----------------------------------------------------------
   st_geometry(segments) <- "geom"
   st_geometry(supression_polygons) <- "geom"
   
