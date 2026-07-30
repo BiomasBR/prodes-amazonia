@@ -219,10 +219,6 @@ saveRDS(
       var, process_version,sep = "_"),
     ".rds"))
 
-
-# saveRDS(tempcnn_model,"~/grupos/biomasbr-amazonia/sits-prodes/prodes.amz/data/rds/model/temp_cnn/tcnn-model_46t_2y_2023-08-01_2025-08-13_default-model_2026-07-29_15h08m.rds")
-
-
 print("Model trained successfully!")
 
 # ============================================================
