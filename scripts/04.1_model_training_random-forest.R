@@ -11,7 +11,7 @@ library(randomForestExplainer, lib.loc = "/opt/r/R/x86_64-pc-linux-gnu-library/4
 # Define the parameters: These are user-defined variables
 time_series_name <- "TS-tiles_2y_2023-08-01_2025-08-01_eco-3-mt-47d_2026-07-29_15h01m.rds"
 
-# Extract the tiles and date of the string separated by "_"
+# Extract the date of the string separated by "_"
 start_date  <- stringr::str_split_i(time_series_name, "_", 3)
 end_date    <- stringr::str_split_i(time_series_name, "_", 4)
 
