@@ -10,7 +10,7 @@ library(luz)
 library(stringr)
 
 # Define the parameters: These are user-defined variables
-time_series_name  <- "TS-tiles_2y_2023-08-01_2025-08-13_eco-3-mt-48d_2026-07-29_14h00m.rds"
+time_series_name  <- "TS-68-tiles_2y_2023-08-01_2025-08-13_eco-3-mt-48d_2026-07-29_14h00m.rds"
 
 # Extract the date of the string separated by "_"
 start_date <- stringr::str_split_i(time_series_name, "_", 3)
@@ -18,7 +18,6 @@ end_date   <- stringr::str_split_i(time_series_name, "_", 4)
 
 # Calculate the number of years in the training cube
 no.years    <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
-tiles_train <- paste(sort(tiles), collapse = "-")
 no.tiles    <- paste0(stringr::str_split_i(time_series_name, "-", 2), "t")
 
 # Function to read class names and their colors::IMPORTANT
@@ -146,7 +145,7 @@ ggplot2::ggsave(
     plots_dir,
     paste0(
       "Kfold-metrics_",
-      tiles_train, "_",
+      no.tiles, "_",
       start_date, "_", end_date, "_",
       var, "_",
       format(Sys.Date(), "%Y-%m-%d"),
@@ -237,7 +236,7 @@ dir.create(model_dir, showWarnings = FALSE, recursive = TRUE)
 # File name uses same pattern as model
 params_filename <- paste0(
   "TCNN-parameters_",
-  length(tiles), "-tiles-", tiles_train, "_",
+  length(tiles), "-tiles-", no.tiles, "_",
   no.years, "-period-",
   start_date, "_", end_date,
   "_", var, "_", process_version, ".txt"
@@ -252,7 +251,7 @@ params_lines <- c(
   "# --- General information ---",
   paste0("process_version         : ", process_version),
   paste0("var                     : ", var),
-  paste0("tiles                   : ", tiles_train),
+  paste0("tiles                   : ", no.tiles),
   paste0("period_years            : ", no.years),
   paste0("number_of_tiles         : ", length(tiles)),
   paste0("start_date              : ", start_date),
