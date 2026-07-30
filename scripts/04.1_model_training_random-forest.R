@@ -185,7 +185,6 @@ print("Model trained successfully!")
 save_rf_model_plot <- function(
     rf_model,
     plots_dir,
-    tiles,
     no.years,
     start_date,
     end_date,
@@ -203,10 +202,8 @@ save_rf_model_plot <- function(
   print(g)
   
   # Build file name
-  tiles_str <- paste(tiles, collapse = "-")
   file_name <- paste0(
     "RF-minimal-tree-depth",
-    "_", tiles_str,
     "_", no.years,
     "_", start_date,
     "_", end_date,
@@ -317,7 +314,6 @@ save_rf_oob_plot <- function(
 save_rf_oob_plot(
   rf_model   = rf_model,
   plots_dir  = plots_dir,
-  tiles      = tiles,
   no.years   = no.years,
   start_date = start_date,
   end_date   = end_date,
