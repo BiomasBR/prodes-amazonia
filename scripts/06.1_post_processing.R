@@ -20,7 +20,7 @@ tiles       <- c("024013", "012015", "013014", "013015")
 # File and folder paths
 seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular_2026-06-25"
 class_path  <- "data/class"
-mask_path   <- "data/raw/auxiliary/mask_geral_amz_v2024.gpkg" # nome da mascara em gpkg geral
+mask_path   <- "data/raw/auxiliary/mask_geral_amz_v2024.gpkg"
 config_dir  <- ".."
 
 models <- c("rf"   = "random_forest",
