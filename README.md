@@ -30,7 +30,7 @@ devtools::install(".")
 Visit our website to explore the sampling protocol and learn more about the data used:
 
 ``` sh
-https://migualex.github.io/sits-prodes/
+https://biomasbr.github.io/prodes-amazonia
 ```
 
 # Repository structure
