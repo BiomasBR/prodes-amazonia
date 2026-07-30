@@ -11,7 +11,7 @@ library(RColorBrewer)
 
 # Define the parameters: These are user-defined variables
 tiles           <- c('012014', '012015', '013014', '013015')
-model_name      <- "rf-model_4t_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_after-apocalypse_2026-06-29_18h27m.rds"
+model_name      <- "rf-model_68t_2y_2023-08-01_2025-08-01_eco-3-mt-47d_2026-07-29_15h44m.rds"
 seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular" #SITS recognizes the underscore (_) character as a separator.
 label_method    <- "mean"
 
