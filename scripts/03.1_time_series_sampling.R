@@ -264,7 +264,7 @@ save_sits_patterns_plot(
   tiles            = tiles,
   var              = var,
   bands            = c('B11','EVI','NDVI'), # NULL to plot and save all bands patterns
-  #labels            = c('DESMAT_ARVORE_REMANESCE'), # NULL to plot and save all classes patterns
+  #labels          = c('DESMAT_ARVORE_REMANESCE'), # NULL to plot and save all classes patterns
   vline_dates      = "08-01",   # vertical doted line on August 1st of each year
   legend_text_size = 10, 
   class_text_size  = 12,
