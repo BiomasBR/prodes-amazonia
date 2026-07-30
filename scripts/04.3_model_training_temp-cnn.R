@@ -10,17 +10,15 @@ library(luz)
 library(stringr)
 
 # Define the parameters: These are user-defined variables
-time_series_name  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-02-24_20h01m.rds"
+time_series_name  <- "TS-68-tiles_2y_2023-08-01_2025-08-13_eco-3-mt-48d_2026-07-29_14h00m.rds"
 
-# Extract the tiles and date of the string separated by "_"
-tiles      <- str_split(str_extract(time_series_name, "(?<=tiles_)[^_]+"), "-")[[1]]
-start_date <- stringr::str_split_i(time_series_name, "_", 4)
-end_date   <- stringr::str_split_i(time_series_name, "_", 5)
+# Extract the date of the string separated by "_"
+start_date <- stringr::str_split_i(time_series_name, "_", 3)
+end_date   <- stringr::str_split_i(time_series_name, "_", 4)
 
 # Calculate the number of years in the training cube
-no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
-tiles_train <- paste(sort(tiles), collapse = "-")
-no.cubes <- paste0(length(tiles_train), "t")
+no.years    <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
+no.tiles    <- paste0(stringr::str_split_i(time_series_name, "-", 2), "t")
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -79,11 +77,14 @@ process_version <- paste0(date_process, time_process)
 # File and folder paths
 time_series_path  <- file.path("data/rds/time_series/", time_series_name)
 rds_path          <- "data/rds/"
-plots_dir        <- "data/plots/tcnn"
+plots_dir         <- "data/plots/tcnn"
 config_dir        <- ".."
+n_cores           <- 28
+sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous versions
 var <- stringr::str_split_i(time_series_name, "_", 6)
+var <- paste0(var, "-eco-3-mt-47d")
 
 # ============================================================
 # 1. Cross-validation of training data
@@ -103,7 +104,7 @@ rfor_validate <- sits_kfold_validate(
   samples = train_samples,
   folds = 5, # how many times to split the data (default = 5)
   ml_method = sits_rfor(),
-  multicores = 28,
+  multicores = n_cores,
   progress = TRUE) # adapt to your computer CPU core availability
 sits_kfold_validate_end <- Sys.time()
 sits_kfold_validate_time <- as.numeric(sits_kfold_validate_end - sits_kfold_validate_start, units = "secs")
@@ -124,7 +125,7 @@ ggplot2::ggsave(
     plots_dir,
     paste0(
       "Kfold-confusion-matrix_",
-      tiles_train, "_",
+      , "_",
       start_date, "_", end_date, "_",
       var, "_",
       format(Sys.Date(), "%Y-%m-%d"),
@@ -145,7 +146,7 @@ ggplot2::ggsave(
     plots_dir,
     paste0(
       "Kfold-metrics_",
-      tiles_train, "_",
+      no.tiles, "_",
       start_date, "_", end_date, "_",
       var, "_",
       format(Sys.Date(), "%Y-%m-%d"),
@@ -182,7 +183,7 @@ tempcnn_model <- sits_train(
     
     # Training configuration
     epochs = 150,                            # number of training epochs
-    batch_size = 1024,                       # batch size for training
+    batch_size = 128,                        # batch size for training
     validation_split = 0.2,                  # proportion of data used for validation
     
     # Optimizer configuration (AdamW)
@@ -214,8 +215,7 @@ saveRDS(
     rds_path, "model/temp_cnn/",
     paste(
       "tcnn-model",
-      length(tiles),
-      tiles_train, no.years,
+      no.years,
       start_date, end_date,
       var, process_version,sep = "_"),
     ".rds"))
@@ -233,7 +233,7 @@ dir.create(model_dir, showWarnings = FALSE, recursive = TRUE)
 # File name uses same pattern as model
 params_filename <- paste0(
   "TCNN-parameters_",
-  length(tiles), "-tiles-", tiles_train, "_",
+  length(tiles), "-tiles-", no.tiles, "_",
   no.years, "-period-",
   start_date, "_", end_date,
   "_", var, "_", process_version, ".txt"
@@ -248,7 +248,7 @@ params_lines <- c(
   "# --- General information ---",
   paste0("process_version         : ", process_version),
   paste0("var                     : ", var),
-  paste0("tiles                   : ", tiles_train),
+  paste0("tiles                   : ", no.tiles),
   paste0("period_years            : ", no.years),
   paste0("number_of_tiles         : ", length(tiles)),
   paste0("start_date              : ", start_date),

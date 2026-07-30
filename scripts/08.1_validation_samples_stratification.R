@@ -17,6 +17,8 @@ library(purrr)
 model_name      <- "rf-model_4t_012014-012015-013014-013015_2y_2023-08-01_2025-07-31_after-apocalypse-agrupado_2026-06-29_11h47m.rds"
 tiles           <- c("012014")
 version         <- "rf-2y-after-apocalypse-agrupado-mean"
+n_cores         <- 28
+sits_parallel(workers = n_cores)
 
 # define and load model path
 models <- c("rf"   = "random_forest",
@@ -57,7 +59,7 @@ sits_validation_sampling <- function(
     alloc         = NULL,
     overhead      = 1.2,
     progress      = TRUE,
-    multicores    = 8,
+    multicores    = n_cores,
     polygons      = polygons,
     prodes        = read_sf(ref_prodes),
     output_dir,
@@ -84,7 +86,7 @@ sits_validation_sampling <- function(
     alloc           = alloc,
     overhead        = overhead,
     progress        = progress,
-    multicores      = multicores
+    multicores      = n_cores
   ) |>
     dplyr::rename(sits_label = label) |>
     dplyr::mutate(validation_label = NA_character_)
@@ -432,7 +434,7 @@ result_all_classes <- sits_validation_sampling(
   alloc           = "alloc_100",
   overhead        = 1.2,
   progress        = TRUE,
-  multicores      = 12,
+  multicores      = n_cores,
   polygons        = polygons,
   prodes          = sf::read_sf(ref_prodes),
   output_dir     = output_dir,
@@ -491,7 +493,7 @@ cube_reclass <- sits_reclassify(
               "Area_Inundavel"
             )
         ),
-        multicores = 24,
+        multicores = n_cores,
         memsize = 180,
         version = paste("grouped", version, sep = "-"),
         output_dir = dir_path,
@@ -522,7 +524,7 @@ result_grouped <- sits_validation_sampling(
   alloc           = "alloc_100",
   overhead        = 1.2,
   progress        = TRUE,
-  multicores      = 12,
+  multicores      = n_cores,
   polygons        = polygons,
   prodes          = sf::read_sf(ref_prodes),
   output_dir      = output_dir,

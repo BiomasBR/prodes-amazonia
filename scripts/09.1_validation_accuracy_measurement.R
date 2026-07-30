@@ -12,8 +12,10 @@ library(ggplot2)
 library(stringr)
 
 # Define the parameters: These are user-defined variables
-tiles      = '012014'
-model_name <- "rf-model_4t_012014-012015-013014-013015_1y_2024-07-27_2025-07-28_all-samples-new-pol-avg-false_2026-02-25_21h03m.rds"
+tiles        = '012014'
+model_name   <- "rf-model_4t_012014-012015-013014-013015_1y_2024-07-27_2025-07-28_all-samples-new-pol-avg-false_2026-02-25_21h03m.rds"
+n_cores      <- 28
+sits_parallel(workers = n_cores)
 
 # Extract the date of the string separated by "_"
 start_date <- stringr::str_split_i(model_name, "_", 5)
@@ -207,7 +209,7 @@ samples_validation <- read_sf(grep(".*_all-classes_*.",
 full_map_acc <- sits_accuracy(cube,
                               validation = samples_validation,
                               memsize = 180,
-                              multicores = 28) # adapt to your computer CPU core availability
+                              multicores = n_cores) # adapt to your computer CPU core availability
 
 # Step 1.4 -- Print the area estimated accuracy
 full_map_acc
@@ -263,7 +265,7 @@ samples_validation <- read_sf(grep(".*_grouped_*.",
 prodes_acc <- sits_accuracy(class_cube, 
                             validation = samples_validation,
                             memsize = 180,
-                            multicores = 28) # adapt to your computer CPU core availability
+                            multicores = n_cores) # adapt to your computer CPU core availability
 
 # Step 2.4 -- Print the area estimated accuracy
 prodes_acc

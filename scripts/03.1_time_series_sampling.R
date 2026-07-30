@@ -9,11 +9,16 @@ library(dplyr)
 library(ggplot2)
 
 # Define the parameters: These are user-defined variables
-tiles           <- c("012014","012015","013014","013015")
-start_date      <- "2024-08-01"
-end_date        <- "2025-07-31"
-var             <- "all-samples-new-pol-avg-false" #ALWAYS SPACE THE WORDS WITH "-"
-sampling_date   <- "2026-02-24"                    # Date of the sampling file (YYYY-MM-DD)
+tiles           <- c('012014', '012015', '013014', '013015')
+start_date      <- '2024-08-01'
+end_date        <- '2025-07-31'
+var             <- 'eco-3-mt-47d' # ALWAYS SPACE THE WORDS WITH "-"
+sampling_date   <- '2026-02-24'   # date of the sampling file (YYYY-MM-DD)
+n_cores         <- 28                            
+
+sits_parallel(workers = n_cores)
+
+tiles_train <- paste0(length(tiles), "-tiles")
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -67,8 +72,7 @@ read_class_config <- function(config_file = "class_config.txt") {
 # File and folder paths
 sample_path   <- "data/raw/samples"
 ts_path       <- "data/rds/time_series/"
-mixture_path  <- "data/raw/mixture_model"
-plots_dir    <- "data/plots/time_series"
+plots_dir     <- "data/plots/time_series"
 config_dir    <- ".."
 
 # ============================================================
@@ -79,7 +83,8 @@ config_dir    <- ".."
 cube <- sits_cube(
   source      = "BDC",
   collection  = "SENTINEL-2-16D",
-  bands       = c('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B11', 'B12', 'NDVI', 'NBR', 'EVI', 'CLOUD'),
+  bands       = c('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 
+                  'B11', 'B12', 'NDVI', 'NBR', 'EVI', 'CLOUD'),
   tiles       = tiles,
   start_date  = start_date,
   end_date    = end_date,
@@ -88,15 +93,12 @@ cube <- sits_cube(
 # Step 1.2 -- Calculate the number of years in the training cube
 no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
 
-# Step 1.3 -- Concatenates all the names of the training tiles into a single string separated by '-'
-tiles_train <- paste(sort(tiles), collapse = "-")
-
 # ============================================================
 # 2. Load and Explore Training Sample Data
 # ============================================================
 
 # Step 2.1 -- Read training samples (rewrite the name of your samples file)
-samples_name    <- paste("training-samples", tiles_train, var, sampling_date, sep = "_")
+samples_name    <- paste("training-samples", var, sampling_date, sep = "_")
 samples_train   <- sf::st_read(file.path(sample_path, paste0(samples_name, ".gpkg")))
 
 # Step 2.2 -- Load class translation from external config file
@@ -127,7 +129,7 @@ samples <- sits_get_data(
   n_sam_pol   = 16,
   pol_avg     = FALSE,
   label       = "label",
-  multicores  = 28,       # adapt to your computer CPU core availability
+  multicores  = n_cores,       
   progress    = TRUE)
 sits_get_data_end <- Sys.time()
 sits_get_data_time <- as.numeric(sits_get_data_end - sits_get_data_start, units = "secs")
@@ -139,7 +141,7 @@ print("Time series extracted successfully!")
 # Step 3.3 -- Save the samples Time Series to a R file
 saveRDS(samples, 
         paste0(ts_path,
-               paste("TS-tiles", tiles_train,
+               paste("TS-", tiles_train,
                      no.years, start_date,
                      end_date, var, format(Sys.Date(), "%Y-%m-%d"), 
                      format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo"),
@@ -215,7 +217,7 @@ save_sits_patterns_plot <- function(samples,
         override.aes = list(linewidth = line_width)
       )
     ) + ggplot2::geom_line(linewidth = line_width) +
-    ggplot2::labs(color = "Bands")              # <-- força o título correto
+    ggplot2::labs(color = "Bands")              # forces the correct title
   
   # Renders on screen
   print(g)
@@ -262,7 +264,7 @@ save_sits_patterns_plot(
   tiles            = tiles,
   var              = var,
   bands            = c('B11','EVI','NDVI'), # NULL to plot and save all bands patterns
-  #labels            = c('DESMAT_ARVORE_REMANESCE'), # NULL to plot and save all classes patterns
+  #labels          = c('DESMAT_ARVORE_REMANESCE'), # NULL to plot and save all classes patterns
   vline_dates      = "08-01",   # vertical doted line on August 1st of each year
   legend_text_size = 10, 
   class_text_size  = 12,

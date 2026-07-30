@@ -77,8 +77,10 @@ process_version <- paste0(date_process, time_process)
 # File and folder paths
 time_series_path  <- file.path("data/rds/time_series/", time_series_name)
 rds_path          <- "data/rds/"
-plots_dir        <- "data/plots/model_xgb"
+plots_dir         <- "data/plots/model_xgb"
 config_dir        <- ".."
+n_cores           <- 28
+sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous versions
 var <- stringr::str_split_i(time_series_name, "_", 6)
@@ -120,7 +122,7 @@ tunned_model <- sits_tuning(
     nthread = 28                        # number of threads (parallel processing)
   ),
   trials = 30,       # number of parameter combinations tested
-  multicores = 28,   # parallel tuning
+  multicores = n_cores,   # parallel tuning
   progress = TRUE    # display progress
 )
 
