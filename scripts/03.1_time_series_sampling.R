@@ -12,8 +12,8 @@ library(ggplot2)
 tiles           <- c('012014', '012015', '013014', '013015')
 start_date      <- '2024-08-01'
 end_date        <- '2025-07-31'
-var             <- 'all-samples-new-pol-avg-false' # ALWAYS SPACE THE WORDS WITH "-"
-sampling_date   <- '2026-02-24' # date of the sampling file (YYYY-MM-DD)
+var             <- 'eco-3-mt-47d' # ALWAYS SPACE THE WORDS WITH "-"
+sampling_date   <- '2026-02-24'   # date of the sampling file (YYYY-MM-DD)
 n_cores         <- 28                            
 
 sits_parallel(workers = n_cores)
