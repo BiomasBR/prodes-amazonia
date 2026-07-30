@@ -468,46 +468,82 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
     <p class="page-subtitle">Classify vector data cube and compute entropy uncertainty</p>
   </div>
 
-  <p><code>sits_classify()</code> applies the trained RF to the vector data cube at <code>n_sam_pol = 16</code>, the same sampling density used during training, ensuring consistent feature extraction. <code>sits_label_classification()</code> assigns the majority-probability class to each segment. The uncertainty step rasterizes entropy values, scales by ×10 000 to UInt16, and saves with DEFLATE compression. This raster is used directly in the validation stratification (Script 6).</p>
+  <p>
+    <code>sits_classify()</code> applies the trained RF to the vector data cube at
+    <code>n_sam_pol = 16</code>, the same sampling density used during training,
+    ensuring consistent feature extraction.
+    <code>sits_label_classification()</code> assigns the majority-probability class
+    to each segment. The uncertainty step rasterizes entropy values, scales by ×10 000
+    to UInt16, and saves with DEFLATE compression. This raster is used directly in the
+    validation stratification (Script 6).
+  </p>
 
   <div class="io-grid">
-    <div class="io-box"><div class="io-label">Input</div><div class="io-val">Segmented vector cube (segments/)<br>Merged S2 + LSMM cube · RF model</div></div>
-    <div class="io-box"><div class="io-label">Output</div><div class="io-val"><code>*_probs_*.gpkg</code>: per-class probabilities<br><code>*_class_*.gpkg</code>: final label map<br><code>*_entropy_*_raster.tif</code>: uncertainty</div></div>
+    <div class="io-box">
+      <div class="io-label">Input</div>
+      <div class="io-val">
+        Segmented vector cube (segments/)<br>
+        Merged S2 + LSMM cube · RF model
+      </div>
+    </div>
+
+    <div class="io-box">
+      <div class="io-label">Output</div>
+      <div class="io-val">
+        <code>*_probs_*.gpkg</code>: per-class probabilities<br>
+        <code>*_class_*.gpkg</code>: final label map<br>
+        <code>*_entropy_*_raster.tif</code>: uncertainty
+      </div>
+    </div>
   </div>
 
+  <!-- STEP 5.1 -->
   <section id="step5.1" class="subsection">
     <h2 id="label-classify">5.1 Label Classify</h2>
     <pre><code id="code-step5" class="language-r"></code></pre>
-</section
+  </section>
+
+  <!-- STEP 5.2 -->
+  <section id="step5.2" class="subsection">
+    <h2 id="uncertainty">5.2 Uncertainty</h2>
+    <p>Work in progress</p>
+  </section>
 </section>
 
-<!-- ═══ SCRIPT ÚNICO (melhor prática) ═════════════════════════════ -->
+<!-- ═══ SCRIPT ÚNICO ═══════════════════════════════════════════════════════ -->
 <script>
-function loadCode(url, elementId) {
+function loadCode(url, elementId, startLine = null, endLine = null) {
   fetch(url)
     .then(res => res.text())
     .then(data => {
       const el = document.getElementById(elementId);
       if (!el) return;
-      el.textContent = data;
-      hljs.highlightElement(el);
+
+      let lines = data.split("\n");
+
+      // se definir intervalo, recorta
+      if (startLine !== null && endLine !== null) {
+        lines = lines.slice(startLine - 1, endLine);
+      }
+
+      el.textContent = lines.join("\n");
+
+      if (typeof hljs !== "undefined") {
+        hljs.highlightElement(el);
+      }
     })
     .catch(err => console.error("Erro ao carregar código:", err));
 }
 
 document.addEventListener("DOMContentLoaded", function () {
   loadCode(
-    "https://raw.githubusercontent.com/migualex/sits-prodes/refs/heads/main/scripts/5_classification.R",
-    "code-step5"
+    "https://raw.githubusercontent.com/BiomasBR/prodes-amazonia/refs/heads/main/scripts/5_classification.R",
+    "code-step5",
+    93,
+    131
   );
 });
 </script>
-
-<section id="step5.2" class="subsection">
-    <h2 id="uncertainty">5.2 Uncertainty</h2>
-    <p>Work in progress</p>
-    <pre><code id="code-step5" class="language-r"></code></pre>
-</section
 
 <!-- ═══ REFERENCES ════════════════════════════════════════════════════════ -->
 <section id="references" class="section">
