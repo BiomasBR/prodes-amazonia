@@ -12,17 +12,7 @@ library(stringr)
 # Define the parameters: These are user-defined variables
 time_series_name  <- "TS-tiles_2y_2023-08-01_2025-08-13_eco-3-mt-48d_2026-07-29_14h00m.rds"
 
-# Extract the tiles and date of the string separated by "_"
-tiles             <- c("012014", "016012", "013014", "018018", "011016", "013015",
-                     "023017", "013013", "015011", "025013", "017013", "019015",
-                     "023016", "015013", "014013", "018016", "019018", "017016",
-                     "018015", "023015", "021015", "015016", "015015", "017018",
-                     "016015", "016016", "020015", "017012", "020013", "016021",
-                     "021013", "018012", "020017", "025015", "021014", "015017",
-                     "017021", "019013", "014014", "026012", "022016", "016013",
-                     "016019", "016018", "012017", "025017")
-
-# Extract the tiles and date of the string separated by "_"
+# Extract the date of the string separated by "_"
 start_date <- stringr::str_split_i(time_series_name, "_", 3)
 end_date   <- stringr::str_split_i(time_series_name, "_", 4)
 
@@ -30,7 +20,7 @@ end_date   <- stringr::str_split_i(time_series_name, "_", 4)
 no.years    <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
 tiles_train <- paste(sort(tiles), collapse = "-")
 no.cubes    <- paste0(length(tiles_train), "t")
-no.tiles    <- paste0(length(tiles), "t")
+no.tiles    <- paste0(stringr::str_split_i(time_series_name, "-", 2), "t")
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -136,7 +126,7 @@ ggplot2::ggsave(
     plots_dir,
     paste0(
       "Kfold-confusion-matrix_",
-      tiles_train, "_",
+      , "_",
       start_date, "_", end_date, "_",
       var, "_",
       format(Sys.Date(), "%Y-%m-%d"),
