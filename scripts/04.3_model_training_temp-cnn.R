@@ -84,7 +84,8 @@ sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous versions
 var <- stringr::str_split_i(time_series_name, "_", 6)
-var <- paste0(var, "-default-model")
+var <- paste0(var, "-eco-3-mt-47d")
+
 # ============================================================
 # 1. Cross-validation of training data
 # ============================================================
@@ -182,7 +183,7 @@ tempcnn_model <- sits_train(
     
     # Training configuration
     epochs = 150,                            # number of training epochs
-    batch_size = 128,                       # batch size for training
+    batch_size = 128,                        # batch size for training
     validation_split = 0.2,                  # proportion of data used for validation
     
     # Optimizer configuration (AdamW)
