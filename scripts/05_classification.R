@@ -16,8 +16,8 @@ seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular" #SITS recognizes t
 label_method    <- "mean"
 
 # Extract the date of the string separated by "_"
-start_date     <- stringr::str_split_i(model_name, "_", 5)
-end_date       <- stringr::str_split_i(model_name, "_", 6)
+start_date     <- stringr::str_split_i(model_name, "_", 4)
+end_date       <- stringr::str_split_i(model_name, "_", 5)
 
 # File and folder paths 
 models <- c("rf"   = "random_forest",
@@ -42,7 +42,7 @@ log_file <- file.path(log_path, paste0("erros_classificacao_",
 sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous runs
-var <- stringr::str_split_i(model_name, "_", 7)
+var <- stringr::str_split_i(model_name, "_", 6)
 
 # Cube duration in years (independent of the tile)
 no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
