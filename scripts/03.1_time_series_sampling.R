@@ -141,7 +141,7 @@ print("Time series extracted successfully!")
 # Step 3.3 -- Save the samples Time Series to a R file
 saveRDS(samples, 
         paste0(ts_path,
-               paste("TS-", tiles_train,
+               paste(paste0("TS-", tiles_train),
                      no.years, start_date,
                      end_date, var, format(Sys.Date(), "%Y-%m-%d"), 
                      format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo"),
