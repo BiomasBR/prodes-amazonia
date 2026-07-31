@@ -124,7 +124,6 @@ for (tile in tiles) {
       memsize    = 180,
       output_dir = tile_period_dir,
       version    = version,
-      n_sam_pol  = 16,
       verbose    = TRUE,
       progress   = TRUE
     )
