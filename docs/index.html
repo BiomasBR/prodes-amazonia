@@ -4,7 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SITS-AMZ Pipeline · BiomasBR</title>
+  <title>Home - BiomasBR</title>
+  <link rel="icon" type="image/png" href="./figures/logo-biomas-br.png">
   <meta name="description"
     content="End-to-end deforestation and degradation mapping for the Brazilian Legal Amazon using the SITS package." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -91,8 +92,10 @@
       top: 0;
       z-index: 200;
       height: var(--navbar-h);
-      background: #fff;
-      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+      /*background: #fff;
+      border-bottom: 1px solid var(--border);*/
       box-shadow: var(--shadow-xs);
       display: flex;
       align-items: center;
@@ -1572,8 +1575,7 @@
   <nav class="navbar">
     <a class="nb-brand" href="index.html">
       <div class="nb-brand-texts">
-        <span class="nb-brand-top">BiomasBR</span>
-        <span class="nb-brand-main">SITS-AMZ Pipeline</span>
+        <span class="nb-brand-main">BiomasBR</span>
       </div>
     </a>
     <div class="nb-sep"></div>
@@ -1596,7 +1598,6 @@
   </nav>
 
   <div class="layout">
-
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
       <div class="sb-logo-wrap">
@@ -1639,7 +1640,7 @@
       </div>
       <hr class="sb-divider">
       <div class="sb-part">External</div>
-      <a href="https://github.com/migualex/sits-prodes" class="sb-item" target="_blank">Repository ↗</a>
+      <a href="https://biomasbr.github.io/prodes-amazonia" class="sb-item" target="_blank">Repository ↗</a>
       <a href="https://e-sensing.github.io/sitsbook/" class="sb-item" target="_blank">SITS Book ↗</a>
       <a href="https://e-sensing.github.io/sits/" class="sb-item" target="_blank">SITS API Docs ↗</a>
     </aside>
@@ -1650,7 +1651,6 @@
         <!-- ═══ PREFACE ══════════════════════════════════════════════════════════ -->
         <section id="preface">
           <div class="page-header">
-            <div class="page-eyebrow">BiomasBR · PRODES-AMZ Project</div>
             <h1 class="page-title">SITS-AMZ Pipeline</h1>
             <p class="page-subtitle">End-to-end deforestation and degradation mapping for the Brazilian Legal Amazon</p>
           </div>
@@ -1662,7 +1662,8 @@
             The pipeline processes Sentinel-2 16-day composites from the <a href="https://data.inpe.br/bdc/"
               target="_blank">Brazil Data Cube (BDC)</a>, covering neighboring tiles: <code>012014</code>,
             <code>012015</code>, <code>013014</code>, and <code>013015</code> for the 2024-08 to 2025-07 reference
-            period.</p>
+            period.
+          </p>
 
           <p>
             The pipeline follows a <strong>time-first, space-later</strong> paradigm: each spatial unit is associated
@@ -1674,12 +1675,11 @@
 
           <h2 id="agradecimentos"></span>Acknowledgements</h2>
           <p>
-            This project was developed by members of the Amazon team: Guilherme Correa, Gustavo Salgado, Igor Cunha, and
-            Miguel Alexandre da Cunha, under the supervision of Cassiano Messias, Luciana Soler, and Claudio Almeida.
+            The authors are Cassiano Messias, Guilherme Correa, Gustavo Salgado, Igor Cunha, and Miguel Cunha.
             We extend our sincere gratitude to the Brazil Data Cube team, with special thanks to Gilberto Câmara for his
             invaluable contributions and support.
-            This work was supported by the National Council for Scientific and Technological Development (CNPq) under
-            project number 422354/2023-6 in partnership with the National Institute for Space Research (INPE).
+            This work was supported by the National Council for Scientific and Technological Development (CNPq)
+            in partnership with the National Institute for Space Research (INPE).
           <p>
 
           <div class="callout note">
