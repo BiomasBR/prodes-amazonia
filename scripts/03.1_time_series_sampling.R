@@ -10,8 +10,8 @@ library(ggplot2)
 
 # Define the parameters: These are user-defined variables
 tiles           <- c('012014', '012015', '013014', '013015')
-start_date      <- '2024-08-01'
-end_date        <- '2025-07-31'
+start_date      <- '2023-08-01'
+end_date        <- '2025-07-31'   # 46–48 dates
 var             <- 'eco-3-mt-47d' # ALWAYS SPACE THE WORDS WITH "-"
 sampling_date   <- '2026-02-24'   # date of the sampling file (YYYY-MM-DD)
 n_cores         <- 28                            
@@ -141,7 +141,7 @@ print("Time series extracted successfully!")
 # Step 3.3 -- Save the samples Time Series to a R file
 saveRDS(samples, 
         paste0(ts_path,
-               paste("TS-", tiles_train,
+               paste(paste0("TS-", tiles_train),
                      no.years, start_date,
                      end_date, var, format(Sys.Date(), "%Y-%m-%d"), 
                      format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo"),

@@ -9,8 +9,8 @@ library(tibble)
 # Paths for files and folders
 mixture_path    <- 'data/raw/mixture_model'
 tiles           <- c('012014', '012015', '013014', '013015')
-start_date      <- '2025-07-12'
-end_date        <- '2025-07-28'
+start_date      <- '2026-06-26'
+end_date        <- '2026-07-12'
 n_cores         <- 28
 
 sits_parallel(workers = n_cores)

@@ -11,13 +11,13 @@ library(RColorBrewer)
 
 # Define the parameters: These are user-defined variables
 tiles           <- c('012014', '012015', '013014', '013015')
-model_name      <- "rf-model_68t_2y_2023-08-01_2025-08-01_eco-3-mt-47d_2026-07-29_15h44m.rds"
+model_name      <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-08-03_eco-3-mt-46d_2026-08-03_16h02m.rds"
 seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular" #SITS recognizes the underscore (_) character as a separator.
 label_method    <- "mean"
 
 # Extract the date of the string separated by "_"
-start_date     <- stringr::str_split_i(model_name, "_", 5)
-end_date       <- stringr::str_split_i(model_name, "_", 6)
+start_date     <- "2024-08-01"
+end_date       <- "2026-07-31"
 
 # File and folder paths 
 models <- c("rf"   = "random_forest",
@@ -42,7 +42,7 @@ log_file <- file.path(log_path, paste0("erros_classificacao_",
 sits_parallel(workers = n_cores)
 
 # Identifier to distinguish this model run from previous runs
-var <- stringr::str_split_i(model_name, "_", 7)
+var <- stringr::str_split_i(model_name, "_", 6)
 
 # Cube duration in years (independent of the tile)
 no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
@@ -124,7 +124,6 @@ for (tile in tiles) {
       memsize    = 180,
       output_dir = tile_period_dir,
       version    = version,
-      n_sam_pol  = 16,
       verbose    = TRUE,
       progress   = TRUE
     )
