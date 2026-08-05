@@ -9,8 +9,8 @@ library(lubridate)
 
 # Define the parameters: These are user-defined variables
 tiles           <- c('012014', '012015', '013014', '013015')
-start_date      <- '2025-07-01'
-end_date        <- '2025-07-31'
+start_date      <- '2026-06-26'
+end_date        <- '2026-07-12'
 n_cores         <- 28                               
 
 sits_parallel(workers = n_cores)
@@ -276,5 +276,17 @@ for (tile in tiles) {
     next
   }
 }
+
+# Rename segmentation files to standardize the file naming convention
+arqs <- list.files("data/segments",
+                  pattern = "*rectangular-2026*",
+                  full.names = TRUE)
+
+arqs
+
+new_arqs <- gsub("rectangular-2026", "rectangular_2026", arqs)
+new_arqs
+
+file.rename(arqs, new_arqs)
 
 print("Segmentation complete.")
