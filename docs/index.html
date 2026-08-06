@@ -77,7 +77,7 @@
 
     html {
       scroll-behavior: smooth;
-      font-size: 18px
+      font-size: 20px
     }
 
     body {
@@ -512,7 +512,7 @@
 
     .sb-part {
       font-family: var(--sans);
-      font-size: .74rem;
+      font-size: .72rem;
       font-weight: 800;
       letter-spacing: .1em;
       text-transform: uppercase;
@@ -529,7 +529,7 @@
       align-items: baseline;
       gap: .55rem;
       font-family: var(--sans);
-      font-size: .95rem;
+      font-size: .88rem;
       color: var(--text-muted);
       padding: .4rem 1.1rem;
       cursor: pointer;
@@ -584,12 +584,12 @@
     .sb-subitem {
       display: block;
       font-family: var(--sans);
-      font-size: .78rem;
+      font-size: .8rem;
       color: var(--text-faint);
       padding: .22rem 1.1rem .22rem 2.8rem;
       text-decoration: none;
       border-right: 2px solid transparent;
-      line-height: 1.4;
+      line-height: 1.45;
       transition: background .1s, color .1s;
     }
 
@@ -628,7 +628,7 @@
     .sb-subitem {
       display: block;
       font-family: var(--sans);
-      font-size: .88rem;
+      font-size: .8rem;
       color: var(--text-faint);
       padding: .28rem 1.1rem .28rem 2.9rem;
       text-decoration: none;
@@ -708,7 +708,7 @@
 
     .toc-label {
       font-family: var(--sans);
-      font-size: .68rem;
+      font-size: .72rem;
       font-weight: 800;
       letter-spacing: .1em;
       text-transform: uppercase;
@@ -719,7 +719,7 @@
     .toc-link {
       display: block;
       font-family: var(--sans);
-      font-size: .8rem;
+      font-size: .88rem;
       color: var(--text-muted);
       padding: .3rem 1rem .3rem 1.2rem;
       border-left: 2px solid transparent;
@@ -741,7 +741,7 @@
 
     .toc-sub {
       padding-left: 2rem;
-      font-size: .76rem
+      font-size: .8rem
     }
 
     /* ── Page header ── */
@@ -1871,43 +1871,36 @@
   <div class="layout">
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
-      <div class="sb-part sb-part-first">Overview</div>
+      <div class="sb-part sb-part-first">Home</div>
       <a href="index.html#preface" class="sb-item active">Preface</a>
       <a href="index.html#introduction" class="sb-item">Introduction</a>
       <a href="index.html#setup" class="sb-item">Setup</a>
       <hr class="sb-divider">
       <div class="sb-part">Pipeline</div>
-      <a href="stage_1.html" class="sb-item"><span class="sb-item-num">1</span>Linear Spectral Mixture Model</a>
-      <a href="stage_2.html" class="sb-item"><span class="sb-item-num">2</span>Image Segmentation</a>
-      <a href="stage_3.html" class="sb-item sb-has-sub"><span class="sb-item-num">3</span>Time Series Sampling<span
-          class="sb-chevron">›</span></a>
+      <a href="stage_1.html" class="sb-item">Linear Spectral Mixture Model</a>
+      <a href="stage_2.html" class="sb-item">Image Segmentation</a>
+      <a href="stage_3.html" class="sb-item sb-has-sub">Time Series Sampling<span class="sb-chevron">›</span></a>
       <div class="sb-submenu">
         <a href="stage_3.html#sampling" class="sb-subitem">3.1 Sampling Protocol</a>
         <a href="stage_3.html#time_series" class="sb-subitem">3.2 Time Series Extraction</a>
         <!--<a href="stage_3.html#som"         class="sb-subitem">3.3 Samples Quality Assessment</a>-->
       </div>
-      <a href="stage_4.html" class="sb-item sb-has-sub"><span class="sb-item-num">4</span>Model Training<span
-          class="sb-chevron">›</span></a>
+      <a href="stage_4.html" class="sb-item sb-has-sub">Model Training<span class="sb-chevron">›</span></a>
       <div class="sb-submenu">
         <a href="stage_4.html#machine" class="sb-subitem">4.1 Machine Learning</a>
         <a href="stage_4.html#deep" class="sb-subitem">4.2 Deep Learning</a>
       </div>
-      <a href="stage_5.html" class="sb-item sb-has-sub"><span class="sb-item-num">5</span>Classification<span
-          class="sb-chevron">›</span></a>
+      <a href="stage_5.html" class="sb-item sb-has-sub">Classification<span class="sb-chevron">›</span></a>
       <div class="sb-submenu">
         <a href="stage_5.html#label-classify" class="sb-subitem">5.1 Labelled Map</a>
         <a href="stage_5.html#uncertainty" class="sb-subitem">5.2 Uncertainty</a>
       </div>
-      <a href="stage_6.html" class="sb-item sb-has-sub"><span class="sb-item-num">6</span>Map Accuracy<span
-          class="sb-chevron">›</span></a>
+      <a href="stage_6.html" class="sb-item sb-has-sub">Map Accuracy<span class="sb-chevron">›</span></a>
       <div class="sb-submenu">
         <a href="stage_6.html#validation" class="sb-subitem">6.1 Validation Samples</a>
         <a href="stage_6.html#accuracy" class="sb-subitem">6.2 Accuracy Measurement</a>
       </div>
       <hr class="sb-divider">
-      <div class="sb-part">External</div>
-      <a href="https://github.com/BiomasBR/prodes-amazonia" class="sb-item" target="_blank">Repository</a>
-      <a href="https://github.com/e-sensing/sits" class="sb-item" target="_blank">SITS API</a>
     </aside>
 
     <main class="main">
@@ -1917,125 +1910,75 @@
         <section id="preface">
           <div class="page-header">
             <h1 class="page-title">SITS-AMZ Pipeline</h1>
-            <p class="page-subtitle">End-to-end deforestation and degradation mapping for the Brazilian Legal Amazon</p>
+            <p class="page-subtitle">Enhancing deforestation monitoring in the Brazilian Legal Amazon</p>
           </div>
 
           <p>
-            This guide documents the complete processing pipeline of the <strong>Prodes-AMZ</strong> project, an
-            application of the <a href="https://github.com/e-sensing/sits" target="_blank"><code>sits</code></a> R
-            package for annual deforestation and forest degradation monitoring in the Brazilian Legal Amazon.
-            The pipeline processes Sentinel-2 16-day composites from the <a href="https://data.inpe.br/bdc/"
-              target="_blank">Brazil Data Cube (BDC)</a>, covering neighboring tiles: <code>012014</code>,
-            <code>012015</code>, <code>013014</code>, and <code>013015</code> for the 2024-08 to 2025-07 reference
-            period.
+            This guide documents the complete processing pipeline of the SITS-AMZ project, a workflow built with the
+            <a href="https://github.com/e-sensing/sits">SITS</a> R package for land cover classification and
+            monitoring. It is based on the user manual developed for the <code>Version 1.0</code>, initiated on August
+            3, 2026. The documentation describes the complete processing workflow, including data preparation, model
+            training, classification, post-processing, and
+            classification.
           </p>
 
+          <h2 id="agradecimentos"></span>About the authors</h2>
           <p>
-            The pipeline follows a <strong>time-first, space-later</strong> paradigm: each spatial unit is associated
-            with a multivariate time series of spectral bands,
-            a machine learning model classifies those time series, and spatial post-processing rules produce
-            Prodes-compatible polygon outputs.
-            Classification is performed at <strong>segment level</strong> (Object-Based Image Analysis) using vector
-            data cubes.</p>
+            The website was developed by the BiomasBR Amazônia team, consisting of Cassiano Messias, Miguel Alexandre da
+            Cunha, Guilherme Correa, Gustavo Salgado, and Igor Cunha.
 
-          <h2 id="agradecimentos"></span>Acknowledgements</h2>
-          <p>
-            The authors are Cassiano Messias, Guilherme Correa, Gustavo Salgado, Igor Cunha, and Miguel Cunha.
-            We extend our sincere gratitude to the Brazil Data Cube team, with special thanks to Gilberto Câmara for his
-            invaluable contributions and support.
-            This work was supported by the National Council for Scientific and Technological Development (CNPq)
-            in partnership with the National Institute for Space Research (INPE).
+            We sincerely thank the Brazil Data Cube team, especially Gilberto Câmara, for his valuable contributions and
+            continuous support.
+
+            This work was supported by the National Council for Scientific and Technological Development (CNPq) and the
+            National Institute for Space Research (INPE).
+
+
           <p>
 
           <div class="callout note">
             <div class="callout-title">📖 Note</div>
-            <p>All scripts are available at <a href="https://github.com/migualex/sits-prodes"
-                target="_blank">github.com/migualex/sits-prodes</a>. For theoretical background, refer to the <a
+            <p>All scripts are available at <a href="https://github.com/BiomasBR/prodes-amazonia"
+                target="_blank">github.com/BiomasBR/prodes-amazonia</a>. For theoretical background, refer to the <a
                 href="https://e-sensing.github.io/sitsbook/" target="_blank">SITS Book</a> (Simoes et al., 2021).</p>
           </div>
 
-          <h2 id="pipeline-overview"><span class="sec-num">0.1</span>Pipeline Overview</h2>
+          <h2 id="pipeline-overview"><span class="sec-num">0.1</span>Overview</h2>
           <div class="tbl-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>#</th>
                   <th>Script</th>
                   <th>Description</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td class="mono">01</td>
                   <td><code>1_mixture_model.R</code></td>
-                  <td>Generate Linear Spectral Mixture Model fraction bands</td>
+                  <td>Linear Spectral Mixture Model fraction bands</td>
                 </tr>
                 <tr>
-                  <td class="mono">02</td>
-                  <td><code>2_1_segmentation.R</code></td>
-                  <td>SNIC-based segmentation</td>
+                  <td><code>2_segmentation.R</code></td>
+                  <td>Segmentation using Simple Non-Iterative Clustering algorithm</td>
                 </tr>
                 <tr>
-                  <td class="mono">03</td>
-                  <td><code>3_1_time_series_sampling.R</code></td>
+                  <td><code>3_time_series_sampling.R</code></td>
                   <td>Extract training time series</td>
                 </tr>
                 <tr>
-                  <td class="mono">04</td>
-                  <td><code>3_2_samples_quality_assessment.R</code></td>
-                  <td>SOM quality assessment</td>
-                </tr>
-                <tr>
-                  <td class="mono">05</td>
-                  <td><code>4_1_model_training_random-forest.R</code></td>
-                  <td>Random Forest training</td>
-                </tr>
-                <tr>
-                  <td class="mono">06</td>
-                  <td><code>4_2_model_training_xgboost.R</code></td>
-                  <td>XGBoost training</td>
-                </tr>
-                <tr>
-                  <td class="mono">07</td>
-                  <td><code>4_3_model_training_tempcnn.R</code></td>
+                  <td><code>4_model_training_temp-cnn.R</code></td>
                   <td>TempCNN training</td>
                 </tr>
                 <tr>
-                  <td class="mono">08</td>
-                  <td><code>4_4_model_training_ltae.R</code></td>
-                  <td>LTAE training</td>
-                </tr>
-                <tr>
-                  <td class="mono">09</td>
                   <td><code>5_classification.R</code></td>
-                  <td>Classify vector data cube</td>
+                  <td>Vector data cube classification</td>
                 </tr>
                 <tr>
-                  <td class="mono">10</td>
-                  <td><code>6_1_validation_samples_stratification.R</code></td>
-                  <td>Stratified sample design for Forest</td>
+                  <td><code>6_post_processing.R</code></td>
+                  <td>Post-processing</td>
                 </tr>
-                <!--<tr><td class="mono">11</td><td><code>6_2_validation_samples_stratification_non-forest.R</code></td><td>Stratified sample design for Non-Forest</td></tr>-->
-                <tr>
-                  <td class="mono">12</td>
-                  <td><code>7_1_validation_accuracy_measurement.R</code></td>
-                  <td>Validation accuracy measurement for Forest</td>
-                </tr>
-                <!--<tr><td class="mono">13</td><td><code>7_2_validation_accuracy_measurement_non-forest.R</code></td><td>Validation accuracy measurement for Non-Forest</td></tr>-->
-                <tr>
-                  <td class="mono">14</td>
-                  <td><code>8_1_post_processing.R</code></td>
-                  <td>Post-processing for Forest</td>
-                </tr>
-                <!--<tr><td class="mono">15</td><td><code>8_2_post_processing_non-forest.R</code></td><td>Post-processing for Non-Forest</td></tr> -->
               </tbody>
             </table>
-          </div>
-
-          <div class="page-nav">
-            <span></span>
-            <a class="pnav-btn pnav-next" href="#introduction"><span class="pnav-dir">Next →</span><span
-                class="pnav-title">Introduction</span></a>
           </div>
         </section>
 
@@ -2047,56 +1990,40 @@
             <p class="page-subtitle">Context, paradigm, and key concepts</p>
           </div>
 
-          <h2 id="prodes"><span class="sec-num">1.1</span>Prodes and BiomasBR</h2>
-          <!--<p>The <strong>Prodes program</strong>, operated by BiomasBR project at INPE, has continuously monitored deforestation in the Brazilian Legal Amazon since 1988. Prodes tracks gross annual deforestation, 
-    defined as primary forest removed within each August-to-July reference year, firstly using Landsat-8 imagery and then substituido por Sentinel-2 and polygon-based shapefiles with a 1 ha minimum mapping unit. 
-    This pipeline extends Prodes-compatible mapping to include <strong>forest degradation</strong> classes (<code>Degradation</code>, <code>Fire Degradation</code>) alongside the standard deforestation classes, 
-    using Sentinel-2 time series and object-based classification.</p>-->
-          <p>The <strong>Prodes Project</strong>, operated by the BiomasBR project at INPE, has continuously monitored
-            deforestation in the Brazilian Legal Amazon since 1988.
-            Prodes tracks gross annual deforestation, defined as the removal of primary forest within each reference
-            year (from August to July).
-            Previously, the methodology was based on Landsat-8 imagery, with a spatial resolution of 30 meters <a
-              href="#ref2" id="cite2">[2]</a>.
-            It has now transitioned to Sentinel-2 data, with a 10-meter spatial resolution, enabling more detailed and
-            accurate mapping.
-            In addition, Prodes uses polygon-based shapefiles with a minimum mapping unit of 1 hectare.
-            This processing pipeline has been expanded to include <strong>forest degradation</strong> classes
-            (<code>Degradation</code> and <code>Fire Degradation</code>),
-            alongside the standard deforestation classes, using Sentinel-2 time series and object-based classification.
+          <p>The National Institute for Space Research (INPE) has been monitoring annual changes in the Brazilian Amazon
+            through satellite imagery since 1988, within the framework of the Brazilian Amazon Forest Monitoring Program
+            by Satellite (Prodes). Over more than three decades, this initiative has become one of the most consistent
+            forest monitoring programs worldwide. Throughout its evolution, Prodes has expanded its scope beyond the
+            Amazon Forest, incorporating non-forest vegetation areas in 2022.</p>
+
+          <p>Building upon this extensive experience, the Brazilian Biomes Satellite Monitoring Program (BiomasBR) was
+            established with the goal of advancing native vegetation monitoring across the entire Brazilian territory.
+            The program integrates the knowledge accumulated through the historical Prodes mapping series developed for
+            the Atlantic Forest, Pampa, Pantanal, and Caatinga biomes.</p>
+
+          <p>Prodes has experience several methodological improvements, for example incorporated the Sentinel-2 imagery,
+            providing data at 10-meter spatial resolution and enabling more detailed mapping of vegetation changes.
+            Other aspects have also evolved, including changes in the mapping scale and the minimum mapping unit.</p>
+
+          <p>Since 2024, the methodology has incorporated Sentinel-1 data and 16-day temporal composites from the Brazil
+            Data Cube (BDC), expanding monitoring capabilities in areas affected by persistent cloud cover and reducing
+            uncertainties in land use and land cover change detection. This integration of multi-sensor data represents
+            an important step toward more robust and timely monitoring of environmental changes.</p>
+
+          <p>Several studies have focused on improving deforestation monitoring systems, motivated by
+            the growing demand from society for faster and more accurate information. These data are essential for
+            supporting a wide range of public policies and private-sector decision-making processes in Brazil.
+            The effort required by the Prodes is costly, time-consuming, and relies on manual work by multiple analysts.
           </p>
 
-          <h2 id="time-first"><span class="sec-num">1.2</span>Time-First, Space-Later</h2>
-          <p>The <code>sits</code> package implements the <strong>time-first, space-later</strong> paradigm <a
-              href="#ref1" id="cite1">[1]</a>.
-            In the <em>time-first</em> phase, each pixel or segment is represented as a multivariate time series across
-            all acquisition dates.
-            A machine or deep learning model then classifies these time series. In the <em>space-later</em> phase,
-            spatial post-processing rules refine the map.
-            This approach captures seasonal phenological signals, such as the NDVI cycle of pasture versus native
-            vegetation, that single-date composites cannot discriminate.</p>
+          <p>In this context, the present document aims to describe a structural transition in biome-scale deforestation
+            monitoring through the incorporation of Artificial Intelligence techniques into the visual interpretation
+            and delineation of deforestation polygons. The new approach seeks to improve processing efficiency while
+            maintaining the high accuracy standards historically achieved by Prodes. Specifically, this work presents
+            the results obtained from the training and classification of deforestation areas using the TempCNN deep
+            learning architecture.
+          </p>
 
-          <h2 id="obia-concept"><span class="sec-num">1.3</span>Object-Based Classification with Vector Data Cubes</h2>
-          <p>Rather than classifying individual pixels, this pipeline segments the image into spatially homogeneous
-            objects (SNIC superpixels),
-            assembles them into a <strong>vector data cube</strong> (SITS Book, Ch. 25), and classifies the time series
-            extracted per segment.
-            This eliminates salt-and-pepper noise, produces polygon outputs compatible with the PRODES data model,
-            and allows enforcing the minimum mapping unit before classification by controlling segment size.</p>
-
-          <h2 id="bdc-source"><span class="sec-num">1.4</span>Brazil Data Cube as Data Source</h2>
-          <p>All imagery is sourced from the BDC collection <code>SENTINEL-2-16D</code>,
-            which provides analysis-ready 16-day best-pixel composites at 10 m resolution. The BDC applies cloud masking
-            and compositing,
-            making the cubes directly suitable for time series analysis without additional preprocessing.
-            Bands used: B02, B03, B04, B05, B06, B07, B08, B8A, B11, B12, NDVI, NBR, EVI, CLOUD.</p>
-
-          <div class="page-nav">
-            <a class="pnav-btn" href="#preface"><span class="pnav-dir">← Previous</span><span
-                class="pnav-title">Preface</span></a>
-            <a class="pnav-btn pnav-next" href="#setup"><span class="pnav-dir">Next →</span><span
-                class="pnav-title">Setup</span></a>
-          </div>
         </section>
 
         <!-- ═══ SETUP ════════════════════════════════════════════════════════════ -->
@@ -2118,17 +2045,12 @@
               <span class="code-fname">R</span>
             </div>
             <pre
-              class="code-pre"><span class="c"># Install sits from CRAN (stable release)</span>
-install.packages(<span class="s">&quot;sits&quot;</span>)  <span class="c"># requires sits &gt;= 1.5.1</span>
-
-<span class="c"># Or install the development version from GitHub</span>
+              class="code-pre"><span class="c"># Install sits (development version)</span>
 devtools::install_github(&quot;e-sensing/sits&quot;, dependencies = TRUE)</span>
 
-<span class="c"># Install all supporting packages used in this pipeline</span>
-install.packages(<span class="kc">c</span>(
-  <span class="s">&quot;sf&quot;</span>, <span class="s">&quot;terra&quot;</span>, <span class="s">&quot;dplyr&quot;</span>, <span class="s">&quot;tibble&quot;</span>, <span class="s">&quot;ggplot2&quot;</span>, <span class="s">&quot;lubridate&quot;</span>,
-  <span class="s">&quot;purrr&quot;</span>, <span class="s">&quot;stringr&quot;</span>, <span class="s">&quot;fs&quot;</span>, <span class="s">&quot;RColorBrewer&quot;</span>, <span class="s">&quot;gdalUtilities&quot;</span>,
-  <span class="s">&quot;pals&quot;</span>, <span class="s">&quot;cli&quot;</span>, <span class="s">&quot;units&quot;</span>, <span class="s">&quot;smoothr&quot;</span>, <span class="s">&quot;torch&quot;</span>, <span class="s">&quot;luz&quot;</span>))</pre>
+<span class="c"># Install all supporting packages used in the first version</span>
+install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>,<span class="s">&quot;terra&quot;</span>,<span class="s">&quot;dplyr&quot;</span>,<span class="s">&quot;tibble&quot;</span>,<span class="s">&quot;ggplot2&quot;</span>,
+<span class="s">&quot;purrr&quot;</span>,<span class="s">&quot;stringr&quot;</span>,<span class="s">&quot;lubridate&quot;</span>,<!--<span class="s">&quot;randomForestExplainer&quot;</span>--><span class="s">&quot;torch&quot;</span>,<span class="s">&quot;luz&quot;</span>,<span class="s">&quot;RColorBrewer&quot;</span>,<span class="s">&quot;units&quot;</span>,<span class="s">&quot;smoothr&quot;</span>))</pre>
           </div>
 
           <div class="callout important">
@@ -2153,111 +2075,89 @@ install.packages(<span class="kc">c</span>(
             <tbody>
               <tr>
                 <td>sits</td>
-                <td>Provides all SITS functions: data cube creation, Linear Spectral Mixture Model, segmentation, SOM
-                  quality control, ML training, classification, uncertainty estimation, and accuracy assessment.</td>
+                <td>Satellite image time series analysis for earth observation data cubes.</td>
                 <td>All scripts</td>
               </tr>
               <tr>
                 <td>sf</td>
-                <td>Standard R interface for vector spatial data. Used for reading/writing GeoPackage files, geometric
-                  operations (union, difference, buffer, area calculation), and CRS management.</td>
-                <td>2.1, 6.1, 6.2, 7.2, 8.2</td>
+                <td>Support for simple feature access, a standardized way to encode and analyze spatial vector data.
+                </td>
+                <td>2, 6</td>
               </tr>
               <tr>
                 <td>terra</td>
-                <td>Raster data processing. Used to rasterize classified segment vectors, compute entropy rasters from
-                  vector uncertainty outputs, and write compressed GeoTIFF files.</td>
-                <td>5, 6.1, 6.2, 7.2, 8.2</td>
+                <td>Methods for spatial data analysis with vector (points, lines, polygons) and
+                  raster (grid) data. </td>
+                <td>5, 6</td>
               </tr>
               <tr>
                 <td>dplyr</td>
-                <td>Data manipulation. Provides filter, mutate, group_by, summarise, bind_rows, and pipe-based workflows
-                  for sample tables and spatial data frames.</td>
-                <td>3.1, 3.2, 6.1, 6.2, 7.2, 8.2</td>
+                <td>A grammar of data manipulation for data frame-like objects, both in memory and out of memory.</td>
+                <td>3, 6</td>
               </tr>
               <tr>
                 <td>tibble</td>
-                <td>Modern data frame format required by sits for training sample objects. Also used to construct the
-                  endmember specification table in Script 1.</td>
-                <td>1, 3.1, 3.2, 6.1, 6.2</td>
+                <td>Provides a tbl_df class (the tibble) with stricter checks and better formatting than the traditional
+                  data frame.</td>
+                <td>1, 3, 5, 6</td>
               </tr>
               <tr>
                 <td>ggplot2</td>
-                <td>Plotting. Generates SOM evaluation charts, confusion matrices, per-class accuracy heatmaps,
-                  error-adjusted area bar charts, and OOB error curves.</td>
-                <td>3.1, 3.2, 4.1, 4.2, 4.4, 7.2</td>
+                <td>Elegant data visualisations using the grammar of graphics.</td>
+                <td>3, 4, 5, 7</td>
               </tr>
               <tr>
                 <td>lubridate</td>
-                <td>Date arithmetic. Computes the number of years between start_date and end_date used to generate
-                  version strings in output filenames.</td>
-                <td>2.1, 3.1, 3.2, 4.1, 4.2, 5</td>
+                <td>Functions to work with date-times and time-spans: fast and
+                  user friendly parsing of date-time data, extraction and updating of components of a date-time (years,
+                  months, days, hours, minutes, and seconds), algebraic manipulation on date-time and time-span objects.
+                </td>
+                <td>2, 3, 4, 5</td>
               </tr>
               <tr>
                 <td>purrr</td>
-                <td>Functional iteration over lists and vectors. Used to map rasterization and reclassification
-                  functions across multiple tiles and cube directories.</td>
-                <td>6.1, 6.2, 7.2, 8.2</td>
+                <td>A complete toolkit for functional programming in R, providing a set of functions that simplify
+                  iteration, transformation, and data manipulation.</td>
+                <td>6</td>
               </tr>
               <tr>
                 <td>stringr</td>
-                <td>String manipulation. Extracts tile IDs and period codes from version strings to automatically locate
-                  the correct cube directories.</td>
-                <td>6.1, 6.2, 7.2</td>
-              </tr>
-              <tr>
-                <td>fs</td>
-                <td>File system operations. Creates directories, expands paths, and manages temporary files during
-                  rasterization workflows.</td>
-                <td>6.1, 6.2</td>
+                <td>Simple, consistent wrappers for common string operations.</td>
+                <td>4, 6</td>
               </tr>
               <tr>
                 <td>RColorBrewer</td>
-                <td>Color palettes for uncertainty maps and for the class style tables written as QGIS-compatible QML
-                  files alongside rasterized outputs.</td>
-                <td>5, 6.1, 6.2</td>
+                <td>Provides color schemes for maps (and other graphics) designed by Cynthia Brewer.</td>
+                <td>5, 6</td>
               </tr>
-              <tr>
-                <td>gdalUtilities</td>
-                <td>Wraps GDAL's gdal_rasterize to convert classified segment vector maps to integer-coded GeoTIFF
-                  rasters that sits_cube() can read for accuracy assessment.</td>
-                <td>6.1, 6.2</td>
-              </tr>
-              <tr>
-                <td>pals</td>
-                <td>Extended color palettes. Provides cols25() for assigning visually distinct colors to 13+ land cover
-                  classes in the rasterized output style file.</td>
-                <td>6.1, 6.2</td>
-              </tr>
-              <tr>
-                <td>cli</td>
-                <td>Command-line interface messages. Reports per-tile progress during rasterization and reclassification
-                  loops with formatted, colored status output.</td>
+              <!--<tr>
+                <td>randomForestExplainer</td>
+                <td>Visualizing Random Forests in terms of variable importance. A set of tools to help
+                  explain which variables are most important in a random forests.</td>
                 <td>6.1, 6.2, 7.2</td>
-              </tr>
+              </tr>-->
               <tr>
                 <td>units</td>
-                <td>Physical unit handling for spatial thresholds. Used to specify area filters in square metres as
-                  typed quantities for smoothr::fill_holes().</td>
-                <td>8.2</td>
+                <td>Support for measurement units in R vectors, matrices and arrays: automatic propagation, conversion,
+                  derivation and simplification of units; raising errors in case of unit incompatibility.</td>
+                <td>6</td>
               </tr>
               <tr>
                 <td>smoothr</td>
-                <td>Polygon smoothing and hole filling. fill_holes() removes internal holes below a given area threshold
-                  from classified suppression polygons after cloud removal.</td>
-                <td>8.2</td>
+                <td> Tools for smoothing and tidying spatial features (i.e. lines and polygons) to make them more
+                  aesthetically pleasing. Smooth curves, fill holes, and remove small fragments from lines and polygons.
+                </td>
+                <td>6</td>
               </tr>
               <tr>
                 <td>torch</td>
-                <td>Deep learning backend for R. Required by sits_lighttae() for LTAE model training. Provides GPU
-                  acceleration via CUDA when available.</td>
-                <td>4.4</td>
+                <td>Tensors and Neural Networks with 'GPU' Acceleration.</td>
+                <td>4</td>
               </tr>
               <tr>
                 <td>luz</td>
-                <td>High-level training loop for torch. Manages epochs, callbacks, and learning rate schedulers used
-                  internally by the LTAE training routine.</td>
-                <td>4.4</td>
+                <td>Higher Level 'API' for 'torch'.</td>
+                <td>4</td>
               </tr>
             </tbody>
           </table>
@@ -2284,20 +2184,12 @@ install.packages(<span class="kc">c</span>(
 │   ├── rds/
 │   │   ├── time_series/        
 │   │   ├── som/                
-│   │   └── model/
-│   │       ├── random_forest/  
-│   │       ├── xgboost/        
-│   │       └── tempcnn/           
-│   │       └── ltae/           
+│   │   └── model/      
+│   │       └── tempcnn/                    
 │   ├── class/                  
 │   │   ├── raster/             
 │   │   └── post_process/       
 │   └── plots/                  
-  </div>
-
-<div class="page-nav">
-    <a class="pnav-btn" href="#introduction"><span class="pnav-dir">← Previous</span><span class="pnav-title">Introduction</span></a>
-    <a class="pnav-btn pnav-next" href="stage_1.html"><span class="pnav-dir">Next →</span><span class="pnav-title">Step 1: Linear Spectral Mixture Model</span></a>
   </div>
 </section>
 
@@ -2583,24 +2475,29 @@ install.packages(<span class="kc">c</span>(
     });
   })();
 
-  /* ── "On this page" panel — auto-built from the page's own headings ── */
+  /* ── "On this page" panel — limited to the top-level sections only ── */
   (function () {
     var tocNav = document.getElementById('toc-links');
     var tocAside = document.getElementById('page-toc');
     if (!tocNav || !tocAside) return;
 
-    var headings = Array.prototype.slice.call(document.querySelectorAll('.content h2[id], .content h3[id]'));
-    if (headings.length === 0) { tocAside.style.display = 'none'; return; }
-
+    var sectionIds = ['introduction', 'setup', 'flowchart', 'references'];
     var tocLinks = [];
-    headings.forEach(function (h) {
+
+    sectionIds.forEach(function (id) {
+      var sectionEl = document.getElementById(id);
+      if (!sectionEl) return;
+      var titleEl = sectionEl.querySelector('h1.page-title');
+      var label = titleEl ? titleEl.textContent.trim() : id;
       var a = document.createElement('a');
-      a.className = 'toc-link' + (h.tagName === 'H3' ? ' toc-sub' : '');
-      a.href = '#' + h.id;
-      a.textContent = h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim();
+      a.className = 'toc-link';
+      a.href = '#' + id;
+      a.textContent = label;
       tocNav.appendChild(a);
-      tocLinks.push({ el: a, heading: h });
+      tocLinks.push({ el: a, heading: sectionEl });
     });
+
+    if (tocLinks.length === 0) { tocAside.style.display = 'none'; return; }
 
     function onTocScroll() {
       var current = tocLinks[0];
