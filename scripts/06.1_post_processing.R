@@ -13,14 +13,20 @@ library(purrr)
 library(stringr)
 
 # Define the parameters: These are user-defined variables
-model_name  <- "rf-model_68t_2y_2023-08-01_2025-08-01_eco-3-mt-47d_2026-07-29_15h44m.rds"
-version     <- "rf-2y-eco-3-mt-47d-mean"
-tiles       <- c("024013", "012015", "013014", "013015")
+model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-08-03_eco-3-mt-46d_2026-08-03_16h02m.rds"
+version     <- "tcnn-2y-eco-3-mt-46d-mean"
+tiles       <- c('024018','023019','024017','024013','025014','025015','024015','023014',
+                 '019015','025016','023015','025017','020019','010017','025019','023020',
+                 '022014','018020','017023','016023','022013','025018','022020','021020',
+                 '017017','024019','026016','016017','026014','010016','018014','027013',
+                 '018019','027014','012015','015021','020018','019016','015018','019020',
+                 '026015','027012')
+
 
 # File and folder paths
-seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular_2026-06-25"
+seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular"
 class_path  <- "data/class"
-mask_path   <- "data/raw/auxiliary/mask_geral_amz_v2024.gpkg"
+mask_path   <- "data/raw/auxiliary/mask_geral_amz_v2025.gpkg"
 config_dir  <- ".."
 
 models <- c("rf"   = "random_forest",
@@ -29,7 +35,6 @@ models <- c("rf"   = "random_forest",
             "tcnn" = "temp_cnn",
             "rnet" = "res_net",
             "lstm" = "ltsm")
-
 model_type <- stringr::str_split_i(model_name, "-", 1)
 model_path <- file.path("data/rds/model", models[model_type], model_name)
 model      <- readRDS(model_path)
@@ -117,7 +122,7 @@ extract_cloud_mask <- function(
     output_path <- file.path(output_dir, output_filename)
     
     if (file.exists(output_path)) {
-      message(" -> Arquivo ja existe: ", output_filename, ". Pulando processamento.")
+      message(" -> File already exists: ", output_filename, ". Skipping processing.")
       
       cloud_vec <- sf::st_read(output_path, quiet = TRUE)
       
@@ -256,6 +261,61 @@ remove_cloud_areas <- function(
   return(invisible(sits_classification_cloud_cleaned))
 }
 
+# 3.3 Calculate area, perimeter, shared boundaries and equivalent radius
+calculate_edge_metrics <- function(class, prodes_mask, crs_planar = 5880) {
+
+  # Preserves the original state of S2 and ensures restoration upon completion of execution
+  s2_state <- sf_use_s2()
+  on.exit(sf_use_s2(s2_state), add = TRUE)
+  
+  # Redesigns and validates geometries
+  prodes_mask <- st_transform(prodes_mask, crs_planar) |>
+    st_buffer(1) |>
+    st_make_valid()
+  
+  class <- st_transform(class, crs_planar) |>
+    st_make_valid()
+  
+  # Assigns a unique temporary ID for control purposes
+  class$id_feicao <- seq_len(nrow(class))
+  
+  # Geometric Metrics
+  area_vec <- as.numeric(st_area(class))
+  perim_vec <- as.numeric(st_length(st_boundary(class)))
+  
+  class$area <- area_vec
+  class$perimetro_total <- perim_vec
+  class$raio_equivalente <- 2 * (area_vec / perim_vec)
+  class$raio_equivalente[!is.finite(class$raio_equivalente)] <- 0
+  
+  # Shared Edge Calculation
+  class_linhas <- st_cast(class, "MULTILINESTRING")
+  
+  sf_use_s2(FALSE)
+  borda_compartilhada <- st_intersection(class_linhas, prodes_mask)
+  borda_compartilhada$comp_compartilhado <- as.numeric(st_length(borda_compartilhada))
+  
+  # Grouping of segments by feature
+  borda_resumo <- borda_compartilhada |>
+    st_drop_geometry() |>
+    group_by(id_feicao) |>
+    summarise(comp_compartilhado = sum(comp_compartilhado), .groups = "drop")
+  
+  # Combines the results and calculates the final proportion
+  class <- class |>
+    left_join(borda_resumo, by = "id_feicao") |>
+    mutate(
+      comp_compartilhado = coalesce(comp_compartilhado, 0),
+      prop_comp = comp_compartilhado / perimetro_total,
+      prop_comp = ifelse(!is.finite(prop_comp), 0, prop_comp)
+    )
+  
+  # Removes the temporary ID column
+  class$id_feicao <- NULL
+  
+  return(class)
+}
+
 # ============================================================
 # 4. Main function: process ONE tile
 # ============================================================
@@ -263,10 +323,10 @@ remove_cloud_areas <- function(
 process_tile <- function(tile) {
   
   message("\n==============================")
-  message("Iniciando processamento do tile: ", tile)
+  message("Starting tile post-processing: ", tile)
   message("==============================")
   
-  # ---- Step 1.3 -- define o path do raster de classificacao ----
+  # ---- Step 1.3 -- defines the path for the classification raster ----
   raw_class_path <- list.files(
     class_path,
     pattern = paste0(".*_", tile, "_.*_class_", version, "\\.tif$"),
@@ -275,14 +335,14 @@ process_tile <- function(tile) {
   )
   
   if (length(raw_class_path) == 0) {
-    stop("Nenhum raster de classificacao encontrado para o tile ", tile)
+    stop("No classification raster found for the tile ", tile)
   }
   
   if (length(raw_class_path) > 1) {
     stop(
-      "Mais de um raster de classificacao encontrado para o tile ", tile, ":\n",
+      "More than one classification raster found for the tile ", tile, ":\n",
       paste(" -", raw_class_path, collapse = "\n"),
-      "\nAjuste o padrao de busca (ou remova os arquivos duplicados) para que reste apenas 1."
+      "\nAdjust the search pattern (or remove duplicate files) so that only 1 remains."
     )
   }
   
@@ -305,9 +365,9 @@ process_tile <- function(tile) {
   
   if (anyNA(labels_ids)) {
     stop(
-      "Os seguintes labels nao foram encontrados em sits_labels(model): ",
+      "The following labels were not found in sits_labels(model): ",
       paste(labels[is.na(labels_ids)], collapse = ", "),
-      ". Labels disponiveis no modelo: ",
+      ". Labels available in the model: ",
       paste(sits_labels(model), collapse = ", ")
     )
   }
@@ -352,7 +412,7 @@ process_tile <- function(tile) {
   # ----------------------------------------------------------
   # 5. Fill holes < 1 hectare
   # ----------------------------------------------------------
-  query <- sprintf("SELECT * FROM mask_geral_amz_v2024 WHERE tile = '%s'", tile)
+  query <- sprintf("SELECT * FROM mascara_geral_amz_v2025 WHERE tile = '%s'", tile)
   prodes_mask <- read_sf(mask_path, query = query)
   
   prodes_mask <- sf::st_transform(
@@ -402,10 +462,10 @@ process_tile <- function(tile) {
   biome_tile <- st_transform(biome, st_crs(class_diff_mask))
   
   if (tile %in% edge_tiles) {
-    message("O tile ", tile, " eh um tile de borda. Executando intersecao.")
+    message("The tile ", tile, " is an edge tile. Running intersection.")
     class_biome <- st_intersection(class_diff_mask, biome_tile)
   } else {
-    message("O tile ", tile, " nao eh um tile de borda. Intersecao ignorada.")
+    message("The tile ", tile, " is not an edge tile. Intersection ignored.")
     class_biome <- class_diff_mask
   }
   
@@ -425,8 +485,26 @@ process_tile <- function(tile) {
     sf::st_cast("POLYGON") |>
     sf::st_make_valid()
   
+  # # ----------------------------------------------------------
+  # # 9. Calculate old boundaries polygons
+  # # ----------------------------------------------------------
+
+  supression_polygons <- calculate_edge_metrics(
+    class = supression_polygons,
+    prodes_mask = prodes_mask,
+    crs_planar = 5880
+  )
+
+  # # ----------------------------------------------------------
+  # # 10. Remove old boundaries polygons
+  # # ----------------------------------------------------------
+  # 
+   supression_polygons <- supression_polygons |>
+      dplyr::filter(!(prop_comp > 0.1 & prop_comp < 0.9 & raio_equivalente < 35)) |>
+      sf::st_transform(4674)
+  
   # ----------------------------------------------------------
-  # 9. Assigns names of the classes with the greatest spatial intersection
+  # 11. Assigns names of the classes with the greatest spatial intersection
   # ----------------------------------------------------------
   sf_use_s2(FALSE)
   
@@ -452,24 +530,24 @@ process_tile <- function(tile) {
   sf_use_s2(TRUE)
   
   # ----------------------------------------------------------
-  # 10. Select Boundaries Segments
+  # 12. Select Boundaries Segments
   # ----------------------------------------------------------
   vector_path <- list.files(
     "data/segments",
-    pattern = paste0("SENTINEL-2_MSI_", tile, "_.*_segments_", seg_version, "\\.gpkg$"),
+    pattern = paste0("SENTINEL-2_MSI_", tile, "_.*_segments_", seg_version, "(_\\d{4}-\\d{2}-\\d{2})?\\.gpkg$"),
     full.names = TRUE,
     recursive = TRUE
   )
   
   if (length(vector_path) == 0) {
-    stop("Nenhum arquivo de segmentos encontrado para o tile ", tile)
+    stop("No segment file found for the tile ", tile)
   }
   
   if (length(vector_path) > 1) {
     stop(
-      "Mais de um arquivo de segmentos encontrado para o tile ", tile, ":\n",
+      "More than one segment file found for the tile ", tile, ":\n",
       paste(" -", vector_path, collapse = "\n"),
-      "\nAjuste o padrao de busca (ou remova os arquivos duplicados) para que reste apenas 1."
+      "\nAdjust the search pattern (or remove duplicate files) so that only 1 remains."
     )
   }
   
@@ -487,14 +565,19 @@ process_tile <- function(tile) {
   sf_use_s2(TRUE)
   
   # ----------------------------------------------------------
-  # 11. Save final result
+  # 13. Save final result
   # ----------------------------------------------------------
   st_geometry(segments) <- "geom"
   st_geometry(supression_polygons) <- "geom"
   
   merged_polygons <- bind_rows(supression_polygons, segments) |>
     st_as_sf(sf_column_name = "geom") |>
-    dplyr::select(any_of(c("fid", "class")))
+    dplyr::select(
+      any_of(c(
+        "fid", 
+        "class"
+      ))
+    )
   
   output_file <- file.path(
     post_class_path,
@@ -502,12 +585,12 @@ process_tile <- function(tile) {
            tile, "_",
            years, "_",
            end_date_scl, "_",
-           version, "script-atualizado.gpkg")
+           version, ".gpkg")
   )
   
   sf::st_write(merged_polygons, dsn = output_file, delete_dsn = TRUE)
   
-  message("Tile ", tile, " processado com sucesso -> ", output_file)
+  message("Tile ", tile, " successfully processed -> ", output_file)
   
   return(invisible(output_file))
 }
@@ -549,11 +632,11 @@ for (tile in tiles) {
 sucesso <- names(resultados)[!vapply(resultados, is.null, logical(1))]
 falha   <- names(resultados)[vapply(resultados, is.null, logical(1))]
 
-message("\n========== RESUMO DO PROCESSAMENTO ==========")
-message("Total de tiles: ", length(tiles))
-message("Sucesso (", length(sucesso), "): ", paste(sucesso, collapse = ", "))
+message("\n========== PROCESSING SUMMARY ==========")
+message("Total tiles: ", length(tiles))
+message("Success (", length(sucesso), "): ", paste(sucesso, collapse = ", "))
 if (length(falha) > 0) {
-  message("Falha (", length(falha), "): ", paste(falha, collapse = ", "))
+  message("Failure (", length(falha), "): ", paste(falha, collapse = ", "))
 } else {
-  message("Nenhuma falha registrada.")
+  message("No faults recorded.")
 }
