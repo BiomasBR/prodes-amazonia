@@ -1,5 +1,5 @@
 # ============================================================
-#  Classification of Vector Data Cube
+# Vector Data Cube Classification
 # ============================================================
 
 # Load required libraries
