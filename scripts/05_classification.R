@@ -127,6 +127,8 @@ for (tile in tiles) {
       verbose    = TRUE,
       progress   = TRUE
     )
+    gc()
+              
     cat("Labeling...")
     # --- 2.7 Final labeling ---
     class_map <- sits_label_classification(
