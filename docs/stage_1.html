@@ -1927,24 +1927,23 @@
 
           <p>
             The concept of spectral mixture in remote sensing imagery was first formally articulated by Shimabukuro
-            <sup><a href="#ref1" id="cite1">[1]</a></sup>,
-            building on earlier observations by researchers such as Horwitz et al. <sup><a href="#ref2"
-                id="cite2">[2]</a></sup> and Detchmendy &amp; Pace <sup><a href="#ref3" id="cite3">[3]</a></sup>.
+            (1987) <sup><a href="#ref1" id="cite1">[1]</a></sup>,
+            building on earlier observations by researchers such as Horwitz et al. (1971) <sup><a href="#ref2"
+                id="cite2">[2]</a></sup> and Detchmendy &amp; Pace (1972) <sup><a href="#ref3" id="cite3">[3]</a></sup>.
             The core challenge arises when attempting to correctly classify pixels that contain a mixture of surface
             materials rather than
-            a single, spectrally pure cover type. Because most natural landscapes are inherently heterogeneous, a single
-            pixel routinely captures contributions
-            from multiple surface components, each present in varying proportions.
+            a single, spectrally pure cover type.
           </p>
 
           <p>
             Fraction images generated through spectral mixture analysis have found application in a wide range of
-            environmental monitoring programs.
+            articles.
             In Brazil, they have been central to large-scale initiatives such as Digital Prodes and Deter. Beyond
             deforestation monitoring, fraction images
             have also been used in regional projects to quantify burned areas across the Amazon biome <sup><a
-                href="#ref4" id="cite4">[4]</a></sup>.
-            The value of fraction images in these contexts lies in their ability to reduce the volume of multispectral
+                href="#ref4" id="cite4">[4]</a></sup>.</p>
+
+          <p>The value of fraction images in these contexts lies in their ability to reduce the volume of multispectral
             data while simultaneously highlighting
             the specific land-surface information required for a given application. When operating at the temporal and
             spatial scales demanded by large-area
@@ -1958,27 +1957,19 @@
             estimating, for every pixel, the proportions
             of three endmembers — <strong>Soil, Vegetation, and Dark (SVD)</strong> — using Non-Negative Least Squares
             (NNLS) optimization
-            <sup><a href="#ref5" id="cite5">[5]</a></sup>. The resulting fraction bands enrich the feature space
-            available for segmentation and classification,
-            improving the separability of mixed and transitional land cover types that are especially prevalent across
-            the Amazon.
+            <sup><a href="#ref5" id="cite5">[5]</a></sup>.
           </p>
 
           <p>
             The quality of any unmixing result depends critically on the selection of appropriate endmembers. By
-            definition, an endmember is simply a spectral component
-            that contributes to the observed mixture; selecting endmembers that are physically meaningful for the scene
-            under study, and that satisfy the mathematical
-            constraints of the mixture equations, is therefore a prerequisite for obtaining interpretable fraction
-            images.
-          </p>
-
-          <p>
-            Endmembers can be identified in two principal ways: directly from the imagery itself, or from spectral
+            definition, an endmember can be identified in two principal ways: directly from the imagery itself, or from
+            spectral
             libraries assembled through field campaigns
             and laboratory measurements. In well-studied areas under continuous environmental monitoring, the choice of
             endmembers is often relatively
-            straightforward, since representative surface types are already known. In contrast, when working with
+            straightforward, since representative surface types are already known.</p>
+
+          <p>When working with
             unfamiliar scenes or attempting to extract
             specific information not previously characterized, systematic experimentation is required. Users working
             with surface reflectance data generally
@@ -1989,15 +1980,14 @@
           <p>
             In the present analysis, rather than deriving endmembers directly from the imagery, we adopted the globally
             standardized endmembers proposed
-            by Small &amp; Sousa <sup><a href="#ref6" id="cite6">[6]</a></sup>, which offer a physically grounded and
+            by Small &amp; Sousa (2022) <sup><a href="#ref6" id="cite6">[6]</a></sup>, which offer a physically grounded
+            and
             sensor-specific framework for spectral
             unmixing of Sentinel-2/MSI data. Their study assembled a composite spectral feature space from 110 image
             tiles collected at spectral diversity
             hotspots distributed worldwide, encompassing more than 13 billion individual spectra across a broad range of
             terrestrial biomes, land cover types,
-            and climatic regions. Crucially, their analysis demonstrated that the spectral mixing space is effectively
-            three-dimensional,
-            with 99% of total spectral variance captured within three low-order principal component dimensions.
+            and climatic regions.
           </p>
 
           <p>
@@ -2011,8 +2001,7 @@
             axes; and pixels dominated by
             <strong>green vegetation</strong> shift strongly toward the y-axis, owing to the characteristically high NIR
             reflectance and low red reflectance
-            produced by chlorophyll absorption. Each of these regions corresponds directly to one of the three fraction
-            images output by the model.
+            produced by chlorophyll absorption.
           </p>
 
           <figure id="fig-svd" style="text-align: center;">
