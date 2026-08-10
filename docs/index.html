@@ -1933,17 +1933,17 @@
           </div>
 
           <p>
-            This guide documents the complete processing pipeline of the SITS-AMZ project, a workflow built with the
-            <a href="https://github.com/e-sensing/sits">SITS</a> R package for land cover classification and
-            monitoring. It is based on the user manual developed for the <code>Version 1.0</code>, initiated on August
-            3, 2026. The documentation describes the complete processing workflow, including data preparation, model
-            training, classification, post-processing, and
-            classification.
+            This guide documents the complete processing pipeline of the SITS-AMZ project, built using the <a
+              href="https://github.com/e-sensing/sits">sits</a> package for land classification, following a time-first,
+            space-later approach. This user manual was developed for <code>Version 1.0</code>, initiated in August 2026,
+            and describes the complete processing workflow, including model training, classification, and
+            post-processing.
+
           </p>
 
           <h2 id="agradecimentos"></span>About the authors</h2>
           <p>
-            The website was developed by the BiomasBR Amazônia team, consisting of Cassiano Messias, Miguel Alexandre da
+            The website was developed by the BiomasBR Amazônia team: Cassiano Messias, Miguel Alexandre da
             Cunha, Guilherme Correa, Gustavo Salgado, and Igor Cunha.
 
             We sincerely thank the Brazil Data Cube team, especially Gilberto Câmara, for his valuable contributions and
@@ -1962,7 +1962,8 @@
                 href="https://e-sensing.github.io/sitsbook/" target="_blank">SITS Book</a> (Simoes et al., 2021).</p>
           </div>
 
-          <h2 id="pipeline-overview"><span class="sec-num">0.1</span>Overview</h2>
+          <h2 id="pipeline-overview"><span class="sec-num"></span>Scripts overview</h2>
+
           <div class="tbl-wrap">
             <table>
               <thead>
@@ -1999,205 +2000,311 @@
               </tbody>
             </table>
           </div>
-        </section>
 
-        <!-- ═══ INTRODUCTION ════════════════════════════════════════════════════ -->
-        <section id="introduction" class="section">
-          <div class="page-header">
-            <div class="page-eyebrow">Chapter 1</div>
-            <h1 class="page-title">Introduction</h1>
-            <p class="page-subtitle">Context, paradigm, and key concepts</p>
-          </div>
+          <style>
+            .tbl-wrap {
+              width: 100%;
+              display: flex;
+              justify-content: center;
+              margin: 1.5rem 0 2rem;
+              overflow-x: auto;
+            }
 
-          <p>The National Institute for Space Research (INPE) has been monitoring annual changes in the Brazilian Amazon
-            through satellite imagery since 1988, within the framework of the Brazilian Amazon Forest Monitoring Program
-            by Satellite (Prodes) <a href="#ref1" id="cite1">[1]</a> <a href="#ref7" id="cite7">[7]</a>. Over more than
-            three decades, this initiative has become one of the most consistent
-            forest monitoring programs worldwide. Throughout its evolution, Prodes has expanded its scope beyond the
-            Amazon Forest, incorporating non-forest vegetation areas in 2022 <a href="#ref3" id="cite3">[3]</a>.</p>
+            .tbl-wrap table {
+              width: 90%;
+              max-width: 1000px;
+              border-collapse: collapse;
+              margin: 0 auto;
+            }
 
-          <p>Building upon this extensive experience, the Brazilian Biomes Satellite Monitoring Program (BiomasBR) was
-            established with the goal of advancing native vegetation monitoring across the entire Brazilian territory.
-            The program integrates the knowledge accumulated through the historical Prodes mapping series developed for
-            the Atlantic Forest, Pampa, Pantanal, and Caatinga biomes <a href="#ref3" id="cite3b">[3]</a>.</p>
+            #pipeline-overview {
+              text-align: left !important;
+              display: block;
+              width: 100%;
+              margin-left: 0;
+              margin-right: 0;
+            }
 
-          <p>Prodes has experienced several methodological improvements, for example incorporated the Sentinel-2 imagery,
-            providing data at 10-meter spatial resolution and enabling more detailed mapping of vegetation changes
-            <a href="#ref1" id="cite1b">[1]</a>. Other aspects have also evolved, including changes in the mapping scale
-            and the minimum mapping unit.
-          </p>
 
-          <p>Since 2024, the methodology has incorporated Sentinel-1 data and 16-day temporal composites from the Brazil
-            Data Cube (BDC) <a href="#ref4" id="cite4">[4]</a>, expanding monitoring capabilities in areas affected by
-            persistent cloud cover and reducing
-            uncertainties in land use and land cover change detection. This integration of multi-sensor data represents
-            an important step toward more robust and timely monitoring of environmental changes <a href="#ref5"
-              id="cite5">[5]</a>.</p>
+            .tbl-wrap th,
+            .tbl-wrap td {
+              padding: 0.9rem 1.2rem;
+              text-align: center;
+              vertical-align: middle;
+              line-height: 1.5;
+            }
 
-          <p>Several studies have focused on improving deforestation monitoring systems, motivated by
-            the growing demand from society for faster and more accurate information <a href="#ref9" id="cite9">[9]</a>. These data are essential for
-            supporting a wide range of public policies and private-sector decision-making processes in Brazil.
-            The effort required by the Prodes is costly, time-consuming, and relies on manual work by multiple analysts
-            <a href="#ref8" id="cite8">[8]</a>.
-          </p>
+            .tbl-wrap th {
+              font-weight: 600;
+            }
 
-          <p>In this context, the present document aims to describe a structural transition in biome-scale deforestation
-            monitoring through the incorporation of Artificial Intelligence techniques into the visual interpretation
-            and delineation of deforestation polygons. The new approach seeks to improve processing efficiency while
-            maintaining the high accuracy standards historically achieved by Prodes. Specifically, this work presents
-            the results obtained from the training and classification of deforestation areas using the TempCNN deep
-            learning architecture <a href="#ref6" id="cite6">[6]</a>.
-          </p>
+            .tbl-wrap td:first-child {
+              white-space: nowrap;
+            }
 
-        </section>
+            .tbl-wrap code {
+              display: inline-block;
+            }
+          </style>
 
-        <!-- ═══ SETUP ════════════════════════════════════════════════════════════ -->
-        <section id="setup" class="section">
-          <div class="page-header">
-            <div class="page-eyebrow">Chapter 2</div>
-            <h1 class="page-title">Setup</h1>
-            <p class="page-subtitle">Installation, dependencies, and project structure</p>
-          </div>
 
-          <h2 id="installation"><span class="sec-num">2.1</span>Installation</h2>
-          <div class="code-block">
-            <div class="code-header">
-              <div class="code-dots">
-                <div class="cd cd-r"></div>
-                <div class="cd cd-y"></div>
-                <div class="cd cd-g"></div>
-              </div>
-              <span class="code-fname">R</span>
+          <style>
+            #pipeline-overview {
+              text-align: center;
+              margin-bottom: 1.5rem;
+            }
+
+            .tbl-wrap {
+              width: 100%;
+              display: flex;
+              justify-content: center;
+              margin: 1.5rem 0 2rem;
+              overflow-x: auto;
+            }
+
+            .tbl-wrap table {
+              width: 90%;
+              max-width: 1000px;
+              border-collapse: collapse;
+              margin: 0 auto;
+            }
+
+            .tbl-wrap th,
+            .tbl-wrap td {
+              padding: 0.9rem 1.2rem;
+              text-align: center;
+              vertical-align: middle;
+              line-height: 1.5;
+            }
+
+            .tbl-wrap th {
+              font-weight: 600;
+            }
+
+            .tbl-wrap td:first-child {
+              white-space: nowrap;
+            }
+
+            .tbl-wrap code {
+              display: inline-block;
+            }
+          </style>
+
+
+          <!-- ═══ INTRODUCTION ════════════════════════════════════════════════════ -->
+          <section id="introduction" class="section">
+            <div class="page-header">
+              <div class="page-eyebrow">Chapter 1</div>
+              <h1 class="page-title">Introduction</h1>
+              <p class="page-subtitle">Context, paradigm, and key concepts</p>
             </div>
-            <pre
-              class="code-pre"><span class="c"># Install sits (development version)</span>
+
+            <p>The National Institute for Space Research (INPE) has been monitoring annual changes in the Brazilian
+              Amazon
+              through satellite imagery since 1988, within the framework of the Brazilian Amazon Forest Monitoring
+              Program
+              by Satellite (Prodes) <a href="#ref1" id="cite1">[1]</a> <a href="#ref7" id="cite7">[7]</a>. Over more
+              than
+              three decades, this initiative has become one of the most consistent
+              forest monitoring programs worldwide. Throughout its evolution, Prodes has expanded its scope beyond the
+              Amazon Forest, incorporating non-forest vegetation areas in 2022 <a href="#ref3" id="cite3">[3]</a>.</p>
+
+            <p>Building upon this extensive experience, the Brazilian Biomes Satellite Monitoring Program (BiomasBR) was
+              established with the goal of advancing native vegetation monitoring across the entire Brazilian territory.
+              The program integrates the knowledge accumulated through the historical Prodes mapping series developed
+              for
+              the Atlantic Forest, Pampa, Pantanal, and Caatinga biomes <a href="#ref3" id="cite3b">[3]</a>.</p>
+
+            <p>Prodes has experienced several methodological improvements, for example incorporated the Sentinel-2
+              imagery,
+              providing data at 10-meter spatial resolution and enabling more detailed mapping of vegetation changes
+              <a href="#ref1" id="cite1b">[1]</a>. Other aspects have also evolved, including changes in the mapping
+              scale
+              and the minimum mapping unit.
+            </p>
+
+            <p>Since 2024, the methodology has incorporated Sentinel-1 data and 16-day temporal composites from the
+              Brazil
+              Data Cube (BDC) <a href="#ref4" id="cite4">[4]</a>, expanding monitoring capabilities in areas affected by
+              persistent cloud cover and reducing
+              uncertainties in land use and land cover change detection. This integration of multi-sensor data
+              represents
+              an important step toward more robust and timely monitoring of environmental changes <a href="#ref5"
+                id="cite5">[5]</a>.</p>
+
+            <p>Several studies have focused on improving deforestation monitoring systems, motivated by
+              the growing demand from society for faster and more accurate information <a href="#ref9"
+                id="cite9">[9]</a>.
+              These data are essential for
+              supporting a wide range of public policies and private-sector decision-making processes in Brazil.
+              The effort required by the Prodes is costly, time-consuming, and relies on manual work by multiple
+              analysts
+              <a href="#ref8" id="cite8">[8]</a>.
+            </p>
+
+            <p>In this context, the present document aims to describe a structural transition in biome-scale
+              deforestation
+              monitoring through the incorporation of Artificial Intelligence techniques into the visual interpretation
+              and delineation of deforestation polygons. The new approach seeks to improve processing efficiency while
+              maintaining the high accuracy standards historically achieved by Prodes. Specifically, this work presents
+              the results obtained from the training and classification of deforestation areas using the TempCNN deep
+              learning architecture <a href="#ref6" id="cite6">[6]</a>.
+            </p>
+
+          </section>
+
+          <!-- ═══ SETUP ════════════════════════════════════════════════════════════ -->
+          <section id="setup" class="section">
+            <div class="page-header">
+              <div class="page-eyebrow">Chapter 2</div>
+              <h1 class="page-title">Setup</h1>
+              <p class="page-subtitle">Installation, dependencies, and project structure</p>
+            </div>
+
+            <h2 id="installation"><span class="sec-num">2.1</span>Installation</h2>
+            <div class="code-block">
+              <div class="code-header">
+                <div class="code-dots">
+                  <div class="cd cd-r"></div>
+                  <div class="cd cd-y"></div>
+                  <div class="cd cd-g"></div>
+                </div>
+                <span class="code-fname">R</span>
+              </div>
+              <pre
+                class="code-pre"><span class="c"># Install sits (development version)</span>
 devtools::install_github(&quot;e-sensing/sits&quot;, dependencies = TRUE)</span>
 
 <span class="c"># Install all supporting packages used in the first version</span>
 install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>,<span class="s">&quot;terra&quot;</span>,<span class="s">&quot;dplyr&quot;</span>,<span class="s">&quot;tibble&quot;</span>,<span class="s">&quot;ggplot2&quot;</span>,
 <span class="s">&quot;purrr&quot;</span>,<span class="s">&quot;stringr&quot;</span>,<span class="s">&quot;lubridate&quot;</span>,<!--<span class="s">&quot;randomForestExplainer&quot;</span>--><span class="s">&quot;torch&quot;</span>,<span class="s">&quot;luz&quot;</span>,<span class="s">&quot;RColorBrewer&quot;</span>,<span class="s">&quot;units&quot;</span>,<span class="s">&quot;smoothr&quot;</span>))</pre>
-          </div>
+            </div>
 
-          <div class="callout important">
-            <div class="callout-title">⚠ Pre-settings</div>
-            <p>ALWAYS set a seed in script. We decided to use ‘SETSEED = 88’, in reference to the year 1988, the first
-              year of PRODES mapping.</p>
-            <!--All cubes are sourced from the <strong>Brazil Data Cube</strong> (<code>source = "BDC"</code>). A free access token is required. 
+            <div class="callout important">
+              <div class="callout-title">⚠ Pre-settings</div>
+              <p>ALWAYS set a seed in script. We decided to use ‘SETSEED = 88’, in reference to the year 1988, the first
+                year of PRODES mapping.</p>
+              <!--All cubes are sourced from the <strong>Brazil Data Cube</strong> (<code>source = "BDC"</code>). A free access token is required. 
       Register at <a href="https://data.inpe.br/bdc/" target="_blank">BDC</a> and configure with <code>sits_config(bdc_access_key = "...")</code>.</p>-->
-          </div>
+            </div>
 
-          <h2 id="libraries"><span class="sec-num">2.2</span>Libraries</h2>
-          <p>Every R package used across all scripts, with a brief description of its role in the pipeline.</p>
+            <h2 id="libraries"><span class="sec-num">2.2</span>Libraries</h2>
+            <p>Every R package used across all scripts, with a brief description of its role in the pipeline.</p>
 
-          <table class="lib-table">
-            <thead>
-              <tr>
-                <th>Package</th>
-                <th>Description</th>
-                <th>Used in</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>sits</td>
-                <td>Satellite image time series analysis for earth observation data cubes.</td>
-                <td>All scripts</td>
-              </tr>
-              <tr>
-                <td>sf</td>
-                <td>Support for simple feature access, a standardized way to encode and analyze spatial vector data.
-                </td>
-                <td>2, 6</td>
-              </tr>
-              <tr>
-                <td>terra</td>
-                <td>Methods for spatial data analysis with vector (points, lines, polygons) and
-                  raster (grid) data. </td>
-                <td>5, 6</td>
-              </tr>
-              <tr>
-                <td>dplyr</td>
-                <td>A grammar of data manipulation for data frame-like objects, both in memory and out of memory.</td>
-                <td>3, 6</td>
-              </tr>
-              <tr>
-                <td>tibble</td>
-                <td>Provides a tbl_df class (the tibble) with stricter checks and better formatting than the traditional
-                  data frame.</td>
-                <td>1, 3, 5, 6</td>
-              </tr>
-              <tr>
-                <td>ggplot2</td>
-                <td>Elegant data visualisations using the grammar of graphics.</td>
-                <td>3, 4, 5, 7</td>
-              </tr>
-              <tr>
-                <td>lubridate</td>
-                <td>Functions to work with date-times and time-spans: fast and
-                  user friendly parsing of date-time data, extraction and updating of components of a date-time (years,
-                  months, days, hours, minutes, and seconds), algebraic manipulation on date-time and time-span objects.
-                </td>
-                <td>2, 3, 4, 5</td>
-              </tr>
-              <tr>
-                <td>purrr</td>
-                <td>A complete toolkit for functional programming in R, providing a set of functions that simplify
-                  iteration, transformation, and data manipulation.</td>
-                <td>6</td>
-              </tr>
-              <tr>
-                <td>stringr</td>
-                <td>Simple, consistent wrappers for common string operations.</td>
-                <td>4, 6</td>
-              </tr>
-              <tr>
-                <td>RColorBrewer</td>
-                <td>Provides color schemes for maps (and other graphics) designed by Cynthia Brewer.</td>
-                <td>5, 6</td>
-              </tr>
-              <!--<tr>
+            <table class="lib-table">
+              <thead>
+                <tr>
+                  <th>Package</th>
+                  <th>Description</th>
+                  <th>Used in</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>sits</td>
+                  <td>Satellite image time series analysis for earth observation data cubes.</td>
+                  <td>All scripts</td>
+                </tr>
+                <tr>
+                  <td>sf</td>
+                  <td>Support for simple feature access, a standardized way to encode and analyze spatial vector data.
+                  </td>
+                  <td>2, 6</td>
+                </tr>
+                <tr>
+                  <td>terra</td>
+                  <td>Methods for spatial data analysis with vector (points, lines, polygons) and
+                    raster (grid) data. </td>
+                  <td>5, 6</td>
+                </tr>
+                <tr>
+                  <td>dplyr</td>
+                  <td>A grammar of data manipulation for data frame-like objects, both in memory and out of memory.</td>
+                  <td>3, 6</td>
+                </tr>
+                <tr>
+                  <td>tibble</td>
+                  <td>Provides a tbl_df class (the tibble) with stricter checks and better formatting than the
+                    traditional
+                    data frame.</td>
+                  <td>1, 3, 5, 6</td>
+                </tr>
+                <tr>
+                  <td>ggplot2</td>
+                  <td>Elegant data visualisations using the grammar of graphics.</td>
+                  <td>3, 4, 5, 7</td>
+                </tr>
+                <tr>
+                  <td>lubridate</td>
+                  <td>Functions to work with date-times and time-spans: fast and
+                    user friendly parsing of date-time data, extraction and updating of components of a date-time
+                    (years,
+                    months, days, hours, minutes, and seconds), algebraic manipulation on date-time and time-span
+                    objects.
+                  </td>
+                  <td>2, 3, 4, 5</td>
+                </tr>
+                <tr>
+                  <td>purrr</td>
+                  <td>A complete toolkit for functional programming in R, providing a set of functions that simplify
+                    iteration, transformation, and data manipulation.</td>
+                  <td>6</td>
+                </tr>
+                <tr>
+                  <td>stringr</td>
+                  <td>Simple, consistent wrappers for common string operations.</td>
+                  <td>4, 6</td>
+                </tr>
+                <tr>
+                  <td>RColorBrewer</td>
+                  <td>Provides color schemes for maps (and other graphics) designed by Cynthia Brewer.</td>
+                  <td>5, 6</td>
+                </tr>
+                <!--<tr>
                 <td>randomForestExplainer</td>
                 <td>Visualizing Random Forests in terms of variable importance. A set of tools to help
                   explain which variables are most important in a random forests.</td>
                 <td>6.1, 6.2, 7.2</td>
               </tr>-->
-              <tr>
-                <td>units</td>
-                <td>Support for measurement units in R vectors, matrices and arrays: automatic propagation, conversion,
-                  derivation and simplification of units; raising errors in case of unit incompatibility.</td>
-                <td>6</td>
-              </tr>
-              <tr>
-                <td>smoothr</td>
-                <td> Tools for smoothing and tidying spatial features (i.e. lines and polygons) to make them more
-                  aesthetically pleasing. Smooth curves, fill holes, and remove small fragments from lines and polygons.
-                </td>
-                <td>6</td>
-              </tr>
-              <tr>
-                <td>torch</td>
-                <td>Tensors and Neural Networks with 'GPU' Acceleration.</td>
-                <td>4</td>
-              </tr>
-              <tr>
-                <td>luz</td>
-                <td>Higher Level 'API' for 'torch'.</td>
-                <td>4</td>
-              </tr>
-            </tbody>
-          </table>
+                <tr>
+                  <td>units</td>
+                  <td>Support for measurement units in R vectors, matrices and arrays: automatic propagation,
+                    conversion,
+                    derivation and simplification of units; raising errors in case of unit incompatibility.</td>
+                  <td>6</td>
+                </tr>
+                <tr>
+                  <td>smoothr</td>
+                  <td> Tools for smoothing and tidying spatial features (i.e. lines and polygons) to make them more
+                    aesthetically pleasing. Smooth curves, fill holes, and remove small fragments from lines and
+                    polygons.
+                  </td>
+                  <td>6</td>
+                </tr>
+                <tr>
+                  <td>torch</td>
+                  <td>Tensors and Neural Networks with 'GPU' Acceleration.</td>
+                  <td>4</td>
+                </tr>
+                <tr>
+                  <td>luz</td>
+                  <td>Higher Level 'API' for 'torch'.</td>
+                  <td>4</td>
+                </tr>
+              </tbody>
+            </table>
 
-          <h2 id="project-structure"><span class="sec-num">2.3</span>Project Structure</h2>
-          <div class="code-block">
-            <div class="code-header">
-              <div class="code-dots">
-                <div class="cd cd-r"></div>
-                <div class="cd cd-y"></div>
-                <div class="cd cd-g"></div>
+            <h2 id="project-structure"><span class="sec-num">2.3</span>Project Structure</h2>
+            <div class="code-block">
+              <div class="code-header">
+                <div class="code-dots">
+                  <div class="cd cd-r"></div>
+                  <div class="cd cd-y"></div>
+                  <div class="cd cd-g"></div>
+                </div>
+                <span class="code-fname">bash</span>
               </div>
-              <span class="code-fname">bash</span>
-            </div>
-            <pre class="code-pre">prodes.amz/
+              <pre class="code-pre">prodes.amz/
 ├── scripts/                    
 ├── data/
 │   ├── raw/
@@ -2483,8 +2590,8 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
         var snippetHtml = m.snippet ? '<span class="search-result-snippet">' + m.snippet + (m.body.length > m.snippet.length ? '…' : '') + '</span>' : '';
         item.innerHTML =
           '<span class="search-result-main">' +
-            '<span class="search-result-title">' + m.title + '</span>' +
-            snippetHtml +
+          '<span class="search-result-title">' + m.title + '</span>' +
+          snippetHtml +
           '</span>' +
           '<span class="search-result-page">' + m.page + '</span>';
         item.addEventListener('mouseenter', function () { setActive(i); });
