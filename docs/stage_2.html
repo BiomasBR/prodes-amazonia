@@ -1930,8 +1930,8 @@
             into closed segments, which are subsequently classified and analyzed.
             The process begins by grouping pixels according to their similarity, based on a distance metric that
             considers both spatial and spectral components.
-            Simões et al. <sup><a href="#ref1" id="cite1">[1]</a></sup> constructed a multitemporal attribute space in
-            which each combination of time and band is treated as an independent dimension.
+            Simões et al. (2021) <sup><a href="#ref1" id="cite1">[1]</a></sup> constructed a multitemporal attribute
+            space in which each combination of time and band is treated as an independent dimension.
             A data cube with 10 bands and 24 time steps results in a 240-dimensional spectral space, complemented by a
             2-dimensional Euclidean space representing spatial coordinates.
           </p>
@@ -1954,7 +1954,7 @@
 
           <p>
             We adopt the SNIC algorithm due to its efficiency and its improvements over SLIC.
-            A comprehensive description of the method can be found in Achanta &amp; Süsstrunk <sup><a href="#ref2"
+            A comprehensive description of the method can be found in Achanta &amp; Süsstrunk (2017)<sup><a href="#ref2"
                 id="cite2">[2]</a></sup>, where the algorithm is formally introduced and discussed.
             Three parameters control the output: <code>spacing</code> (target segment radius in pixels),
             <code>compactness</code> (trade-off between spectral and spatial homogeneity),
