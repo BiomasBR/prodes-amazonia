@@ -1902,23 +1902,13 @@
       <div class="sb-submenu">
         <a href="stage_3.html#sampling" class="sb-subitem">3.1 Sampling Protocol</a>
         <a href="stage_3.html#time_series" class="sb-subitem">3.2 Time Series Extraction</a>
-        <!--<a href="stage_3.html#som"         class="sb-subitem">3.3 Samples Quality Assessment</a>-->
       </div>
       <a href="stage_4.html" class="sb-item sb-has-sub">Model Training<span class="sb-chevron">›</span></a>
       <div class="sb-submenu">
-        <a href="stage_4.html#machine" class="sb-subitem">4.1 Machine Learning</a>
-        <a href="stage_4.html#deep" class="sb-subitem">4.2 Deep Learning</a>
+        <a href="stage_4.html#deep" class="sb-subitem">4.1 Deep Learning</a>
       </div>
       <a href="stage_5.html" class="sb-item sb-has-sub">Classification<span class="sb-chevron">›</span></a>
-      <div class="sb-submenu">
-        <a href="stage_5.html#label-classify" class="sb-subitem">5.1 Labelled Map</a>
-        <a href="stage_5.html#uncertainty" class="sb-subitem">5.2 Uncertainty</a>
-      </div>
-      <a href="stage_6.html" class="sb-item sb-has-sub">Map Accuracy<span class="sb-chevron">›</span></a>
-      <div class="sb-submenu">
-        <a href="stage_6.html#validation" class="sb-subitem">6.1 Validation Samples</a>
-        <a href="stage_6.html#accuracy" class="sb-subitem">6.2 Accuracy Measurement</a>
-      </div>
+      <a href="stage_6.html" class="sb-item sb-has-sub">Post-processing<span class="sb-chevron">›</span></a>
       <hr class="sb-divider">
     </aside>
 
@@ -1958,8 +1948,8 @@
           <div class="callout note">
             <div class="callout-title">📖 Note</div>
             <p>All scripts are available at <a href="https://github.com/BiomasBR/prodes-amazonia"
-                target="_blank">github.com/BiomasBR/prodes-amazonia</a>. For theoretical background, refer to the <a
-                href="https://e-sensing.github.io/sitsbook/" target="_blank">SITS Book</a> (Simoes et al., 2021).</p>
+                target="_blank">github.com/BiomasBR/prodes-amazonia</a>. For theoretical background, refer to the Simões
+              et al., 2021 <sup><a href="#ref2" id="cite2">[2]</a></sup>.</p>
           </div>
 
           <h2 id="pipeline-overview"><span class="sec-num"></span>Scripts overview</h2>
@@ -2100,55 +2090,50 @@
             </div>
 
             <p>The National Institute for Space Research (INPE) has been monitoring annual changes in the Brazilian
-              Amazon
-              through satellite imagery since 1988, within the framework of the Brazilian Amazon Forest Monitoring
-              Program
-              by Satellite (Prodes) <a href="#ref1" id="cite1">[1]</a> <a href="#ref7" id="cite7">[7]</a>. Over more
-              than
-              three decades, this initiative has become one of the most consistent
+              Amazon through satellite imagery since 1988, within the framework of the Brazilian Amazon Forest
+              Monitoring
+              Program by Satellite (Prodes) <sup><a href="#ref1" id="cite1">[1]</a></sup>. Over more
+              than three decades, this initiative has become one of the most consistent
               forest monitoring programs worldwide. Throughout its evolution, Prodes has expanded its scope beyond the
-              Amazon Forest, incorporating non-forest vegetation areas in 2022 <a href="#ref3" id="cite3">[3]</a>.</p>
+              Amazon Forest, incorporating non-forest vegetation areas in 2022 <sup><a href="#ref3"
+                  id="cite3">[3]</a></sup>.</p>
 
             <p>Building upon this extensive experience, the Brazilian Biomes Satellite Monitoring Program (BiomasBR) was
               established with the goal of advancing native vegetation monitoring across the entire Brazilian territory.
               The program integrates the knowledge accumulated through the historical Prodes mapping series developed
-              for
-              the Atlantic Forest, Pampa, Pantanal, and Caatinga biomes <a href="#ref3" id="cite3b">[3]</a>.</p>
+              for the Atlantic Forest, Pampa, Pantanal, and Caatinga biomes <sup><a href="#ref3"
+                  id="cite3b">[3]</a></sup>.</p>
 
             <p>Prodes has experienced several methodological improvements, for example incorporated the Sentinel-2
-              imagery,
-              providing data at 10-meter spatial resolution and enabling more detailed mapping of vegetation changes
-              <a href="#ref1" id="cite1b">[1]</a>. Other aspects have also evolved, including changes in the mapping
-              scale
-              and the minimum mapping unit.
+              imagery, providing data at 10-meter spatial resolution and enabling more detailed mapping of vegetation
+              changes
+              <sup><a href="#ref1" id="cite1b">[1]</a></sup>. Other aspects have also evolved, including changes in the
+              mapping
+              scale and the minimum mapping unit.
             </p>
 
             <p>Since 2024, the methodology has incorporated Sentinel-1 data and 16-day temporal composites from the
-              Brazil
-              Data Cube (BDC) <a href="#ref4" id="cite4">[4]</a>, expanding monitoring capabilities in areas affected by
-              persistent cloud cover and reducing
-              uncertainties in land use and land cover change detection. This integration of multi-sensor data
-              represents
-              an important step toward more robust and timely monitoring of environmental changes <a href="#ref5"
-                id="cite5">[5]</a>.</p>
+              Brazil Data Cube (BDC) <sup><a href="#ref4" id="cite4">[4]</a></sup>, expanding monitoring capabilities in
+              areas
+              affected by
+              persistent cloud cover and reducing uncertainties in land use and land cover change detection. This
+              integration of multi-sensor data
+              represents an important step toward more robust and timely monitoring of environmental changes <sup><a
+                  href="#ref5" id="cite5">[5]</a></sup>.</p>
 
             <p>Several studies have focused on improving deforestation monitoring systems, motivated by
-              the growing demand from society for faster and more accurate information <a href="#ref9"
-                id="cite9">[9]</a>.
-              These data are essential for
-              supporting a wide range of public policies and private-sector decision-making processes in Brazil.
+              the growing demand from society for faster and more accurate information <sup><a href="#ref9"
+                  id="cite9">[9]</a></sup>. These data are essential for supporting a wide range of public policies and
+              private-sector decision-making processes in Brazil.
               The effort required by the Prodes is costly, time-consuming, and relies on manual work by multiple
-              analysts
-              <a href="#ref8" id="cite8">[8]</a>.
+              analysts <sup><a href="#ref8" id="cite8">[8]</a></sup>.
             </p>
 
             <p>In this context, the present document aims to describe a structural transition in biome-scale
-              deforestation
-              monitoring through the incorporation of Artificial Intelligence techniques into the visual interpretation
+              deforestation monitoring through the incorporation of Artificial Intelligence techniques into the visual
+              interpretation
               and delineation of deforestation polygons. The new approach seeks to improve processing efficiency while
-              maintaining the high accuracy standards historically achieved by Prodes. Specifically, this work presents
-              the results obtained from the training and classification of deforestation areas using the TempCNN deep
-              learning architecture <a href="#ref6" id="cite6">[6]</a>.
+              maintaining the high accuracy standards historically achieved by Prodes.
             </p>
 
           </section>
@@ -2371,24 +2356,21 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
   <div id="ref2"><a href="#cite2">[2] </a>Simões, R., Câmara, G., Queiroz, G., Souza, F., Andrade, P., Santos, L., Carvalho, A., &amp; Ferreira, K.</strong> (2021).
     Satellite Image Time Series Analysis for Big Earth Observation Data.<em> Remote Sensing, 13</em> (13), 2428.</div>
   <div id="ref3"><a href="#cite3">[3] </a>Instituto Nacional de Pesquisas Espaciais (INPE).</strong> (2023).
-    <strong>Prodes Brasil: Monitoramento Anual da Supressão de Vegetação Nativa</strong>. Programa de Monitoramento dos Biomas Brasileiros (BiomasBR).
-    <em>Available at: <a href="https://data.inpe.br/biomasbr/prodes-monitoramento-anual-da-supressao-de-vegetacao-nativa/" target="_blank">data.inpe.br/biomasbr</a></em>.</div>
+    <strong>Prodes Monitoramento Anual da Supressão da Vegetação Nativa</strong>. Programa de Monitoramento dos Biomas Brasileiros (BiomasBR).
+    <em>Available at: <a href="https://data.inpe.br/biomasbr/prodes-monitoramento-anual-da-supressao-de-vegetacao-nativa/" target="_blank">https://data.inpe.br/biomasbr/prodes-monitoramento-anual-da-supressao-de-vegetacao-nativa</a></em>.</div>
   <div id="ref4"><a href="#cite4">[4] </a>Ferreira, K. R., Queiroz, G. R., Vinhas, L., Marujo, R. F. B., Simões, R. E. O., Picoli, M. C. A., Câmara, G., Cartaxo, R., Gomes, V. C. F., Santos, L. A., Sanchez, A. H., Arcanjo, J. S., Fronza, J. G., Noronha, C. A., Costa, R. W., Zaglia, M. C., Zioti, F., Körting, T. S., Soares, A. R., Chaves, M. E. D., &amp; Fonseca, L. M. G.</strong> (2020).
     Earth Observation Data Cubes for Brazil: Requirements, Methodology and Products.
     <em>Remote Sensing, 12</em>(24), 4033. https://doi.org/10.3390/rs12244033</div>
   <div id="ref5"><a href="#cite5">[5] </a>Ferrari, F., Ferreira, M. P., &amp; Feitosa, R. Q.</strong> (2023).
     Fusing Sentinel-1 and Sentinel-2 Images with Transformer-Based Network for Deforestation Detection in the Brazilian Amazon Under Diverse Cloud Conditions.
     <em>ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, X-1/W1</em>, 999–1006. https://doi.org/10.5194/isprs-annals-X-1-W1-2023-999-2023</div>
-  <div id="ref6"><a href="#cite6">[6] </a>Pelletier, C., Webb, G. I., &amp; Petitjean, F.</strong> (2019).
-    Temporal Convolutional Neural Network for the Classification of Satellite Image Time Series.
-    <em>Remote Sensing, 11</em>(5), 523. https://doi.org/10.3390/rs11050523</div>
-  <div id="ref7"><a href="#cite7">[7] </a>Shimabukuro, Y. E., Santos, J. R., Formaggio, A. R., Duarte, V., &amp; Rudorff, B. F. T.</strong> (2013).
+  <div id="ref6"><a href="#cite6">[6] </a>Shimabukuro, Y. E., Santos, J. R., Formaggio, A. R., Duarte, V., &amp; Rudorff, B. F. T.</strong> (2013).
     The Brazilian Amazon Monitoring Program: PRODES and DETER Projects. In F. Achard &amp; M. C. Hansen (Eds.),
     <em>Global Forest Monitoring from Earth Observation</em> (pp. 153–169). CRC Press, Taylor &amp; Francis Group. ISBN 978-1-4665-5201-2.</div>
-  <div id="ref8"><a href="#cite8">[8] </a>Maretto, R. V., Fonseca, L. M. G., Jacobs, N., Körting, T. S., Bendini, H. N., &amp; Parente, L. L.</strong> (2021).
+  <div id="ref7"><a href="#cite7">[7] </a>Maretto, R. V., Fonseca, L. M. G., Jacobs, N., Körting, T. S., Bendini, H. N., &amp; Parente, L. L.</strong> (2021).
     Spatio-Temporal Deep Learning Approach to Map Deforestation in Amazon Rainforest.
     <em>IEEE Geoscience and Remote Sensing Letters, 18</em>(5), 771–775. https://doi.org/10.1109/LGRS.2020.2986407</div>
-  <div id="ref9"><a href="#cite9">[9] </a>Hansen, M. C., Potapov, P. V., Moore, R., Hancher, M., Turubanova, S. A., Tyukavina, A., Thau, D., Stehman, S. V., Goetz, S. J., Loveland, T. R., Kommareddy, A., Egorov, A., Chini, L., Justice, C. O., &amp; Townshend, J. R. G.</strong> (2013).
+  <div id="ref8"><a href="#cite8">[8] </a>Hansen, M. C., Potapov, P. V., Moore, R., Hancher, M., Turubanova, S. A., Tyukavina, A., Thau, D., Stehman, S. V., Goetz, S. J., Loveland, T. R., Kommareddy, A., Egorov, A., Chini, L., Justice, C. O., &amp; Townshend, J. R. G.</strong> (2013).
     High-Resolution Global Maps of 21st-Century Forest Cover Change.
     <em>Science, 342</em>(6160), 850–853. https://doi.org/10.1126/science.1244693</div>
 
