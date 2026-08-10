@@ -315,7 +315,7 @@
 
     .search-result {
       display: flex;
-      align-items: baseline;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
       padding: .6rem .75rem;
@@ -324,10 +324,28 @@
       color: var(--text)
     }
 
+    .search-result-main {
+      display: flex;
+      flex-direction: column;
+      gap: .15rem;
+      min-width: 0
+    }
+
     .search-result-title {
       font-family: var(--sans);
       font-size: .92rem;
       font-weight: 500
+    }
+
+    .search-result-snippet {
+      font-family: var(--sans);
+      font-size: .78rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden
     }
 
     .search-result-page {
@@ -335,7 +353,8 @@
       font-size: .72rem;
       color: var(--text-faint);
       white-space: nowrap;
-      flex-shrink: 0
+      flex-shrink: 0;
+      padding-top: .1rem
     }
 
     .search-result:hover,
@@ -2002,7 +2021,7 @@
             The program integrates the knowledge accumulated through the historical Prodes mapping series developed for
             the Atlantic Forest, Pampa, Pantanal, and Caatinga biomes <a href="#ref3" id="cite3b">[3]</a>.</p>
 
-          <p>Prodes has experience several methodological improvements, for example incorporated the Sentinel-2 imagery,
+          <p>Prodes has experienced several methodological improvements, for example incorporated the Sentinel-2 imagery,
             providing data at 10-meter spatial resolution and enabling more detailed mapping of vegetation changes
             <a href="#ref1" id="cite1b">[1]</a>. Other aspects have also evolved, including changes in the mapping scale
             and the minimum mapping unit.
@@ -2016,9 +2035,10 @@
               id="cite5">[5]</a>.</p>
 
           <p>Several studies have focused on improving deforestation monitoring systems, motivated by
-            the growing demand from society for faster and more accurate information. These data are essential for
+            the growing demand from society for faster and more accurate information <a href="#ref9" id="cite9">[9]</a>. These data are essential for
             supporting a wide range of public policies and private-sector decision-making processes in Brazil.
-            The effort required by the Prodes is costly, time-consuming, and relies on manual work by multiple analysts.
+            The effort required by the Prodes is costly, time-consuming, and relies on manual work by multiple analysts
+            <a href="#ref8" id="cite8">[8]</a>.
           </p>
 
           <p>In this context, the present document aims to describe a structural transition in biome-scale deforestation
@@ -2258,6 +2278,12 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
   <div id="ref7"><a href="#cite7">[7] </a>Shimabukuro, Y. E., Santos, J. R., Formaggio, A. R., Duarte, V., &amp; Rudorff, B. F. T.</strong> (2013).
     The Brazilian Amazon Monitoring Program: PRODES and DETER Projects. In F. Achard &amp; M. C. Hansen (Eds.),
     <em>Global Forest Monitoring from Earth Observation</em> (pp. 153–169). CRC Press, Taylor &amp; Francis Group. ISBN 978-1-4665-5201-2.</div>
+  <div id="ref8"><a href="#cite8">[8] </a>Maretto, R. V., Fonseca, L. M. G., Jacobs, N., Körting, T. S., Bendini, H. N., &amp; Parente, L. L.</strong> (2021).
+    Spatio-Temporal Deep Learning Approach to Map Deforestation in Amazon Rainforest.
+    <em>IEEE Geoscience and Remote Sensing Letters, 18</em>(5), 771–775. https://doi.org/10.1109/LGRS.2020.2986407</div>
+  <div id="ref9"><a href="#cite9">[9] </a>Hansen, M. C., Potapov, P. V., Moore, R., Hancher, M., Turubanova, S. A., Tyukavina, A., Thau, D., Stehman, S. V., Goetz, S. J., Loveland, T. R., Kommareddy, A., Egorov, A., Chini, L., Justice, C. O., &amp; Townshend, J. R. G.</strong> (2013).
+    High-Resolution Global Maps of 21st-Century Forest Cover Change.
+    <em>Science, 342</em>(6160), 850–853. https://doi.org/10.1126/science.1244693</div>
 
   <div class="page-nav">
     <a class="pnav-btn" href="index.html#setup"><span class="pnav-dir">← Previous</span><span class="pnav-title">Setup</span></a>
@@ -2344,7 +2370,7 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
     _dmUpdateBtn();
   }
 
-  /* ── Site search — modal dialog with cross-page results, à la GeoLibre ── */
+  /* ── Site search — full-text index across every page of the site ── */
   (function () {
     var overlay = document.getElementById('search-overlay');
     var trigger = document.getElementById('nb-search-trigger');
@@ -2353,70 +2379,89 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
     var closeBtn = document.getElementById('search-modal-close');
     if (!overlay || !trigger || !input || !resultsEl) return;
 
+    // Every page in the site. Hardcoded so the index is complete regardless of
+    // which sidebar links happen to be present on the page the user started on.
+    var PAGES = ['index.html', 'stage_1.html', 'stage_2.html', 'stage_3.html', 'stage_4.html', 'stage_5.html', 'stage_6.html'];
     var currentPage = (window.location.pathname.split('/').pop() || 'index.html');
     var index = [];
+    var indexReady = false;
     var activeIndex = -1;
+    var pendingRender = null;
 
-    function pageLabel(href) {
-      var f = href.split('#')[0].split('/').pop() || 'index.html';
-      return f.replace('.html', '').replace(/_/g, ' ').replace(/^\w/, function (c) { return c.toUpperCase(); });
+    function pageLabel(file) {
+      return file.replace('.html', '').replace(/_/g, ' ').replace(/^\w/, function (c) { return c.toUpperCase(); });
     }
 
-    // 1) Index headings on the current page
-    document.querySelectorAll('.content h1[id], .content h2[id], .content h3[id]').forEach(function (h) {
-      index.push({
-        title: h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim(),
-        href: currentPage + '#' + h.id,
-        page: pageLabel(currentPage),
-        current: true
-      });
-    });
+    function cleanText(el) {
+      return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+    }
 
-    // 2) Index sidebar navigation entries (works even if cross-page fetch is blocked, e.g. file://)
-    var seenHrefs = {};
-    document.querySelectorAll('.sidebar .sb-item, .sidebar .sb-subitem').forEach(function (el) {
-      var href = el.getAttribute('href');
-      if (!href || seenHrefs[href]) return;
-      seenHrefs[href] = true;
-      index.push({
-        title: el.textContent.trim(),
-        href: href,
-        page: el.getAttribute('target') === '_blank' ? 'External' : pageLabel(href),
-        current: false
-      });
-    });
-
-    // 3) Best-effort: fetch same-origin sibling pages and index their headings too
-    var sameOriginPages = {};
-    document.querySelectorAll('.sidebar .sb-item, .sidebar .sb-subitem').forEach(function (el) {
-      if (el.getAttribute('target') === '_blank') return;
-      var href = el.getAttribute('href') || '';
-      var file = href.split('#')[0];
-      if (file && file.indexOf('http') !== 0 && file !== currentPage) sameOriginPages[file] = true;
-    });
-    Object.keys(sameOriginPages).forEach(function (file) {
-      fetch(file).then(function (r) { return r.ok ? r.text() : null; }).then(function (html) {
-        if (!html) return;
-        var doc = new DOMParser().parseFromString(html, 'text/html');
-        doc.querySelectorAll('.content h1[id], .content h2[id], .content h3[id]').forEach(function (h) {
-          index.push({
-            title: h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim(),
-            href: file + '#' + h.id,
-            page: pageLabel(file),
-            current: false
-          });
+    // Build one searchable entry per heading, combined with the body text that
+    // follows it (up to the next heading), so a search matches real page
+    // content, not just section titles.
+    function indexDocument(doc, file) {
+      var content = doc.querySelector('.content');
+      if (!content) return;
+      var headings = content.querySelectorAll('h1[id], h2[id], h3[id]');
+      headings.forEach(function (h) {
+        var title = h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim();
+        var parts = [];
+        var el = h.nextElementSibling;
+        var guard = 0;
+        while (el && !/^H[1-3]$/.test(el.tagName) && guard < 10) {
+          var t = cleanText(el);
+          if (t) parts.push(t);
+          el = el.nextElementSibling;
+          guard++;
+        }
+        var body = parts.join(' ');
+        index.push({
+          title: title,
+          body: body,
+          snippet: body.slice(0, 180),
+          href: file + '#' + h.id,
+          page: pageLabel(file)
         });
-      }).catch(function () { /* likely blocked under file:// — index still has sidebar entries */ });
-    });
+      });
+    }
+
+    function buildIndex() {
+      var tasks = PAGES.map(function (file) {
+        if (file === currentPage) {
+          indexDocument(document, file);
+          return Promise.resolve();
+        }
+        return fetch(file).then(function (r) { return r.ok ? r.text() : null; })
+          .then(function (html) {
+            if (!html) return;
+            var doc = new DOMParser().parseFromString(html, 'text/html');
+            indexDocument(doc, file);
+          })
+          .catch(function () { /* page unreachable (e.g. offline file:// use) — skipped gracefully */ });
+      });
+      Promise.all(tasks).then(function () {
+        indexReady = true;
+        if (!overlay.hidden) renderResults(input.value);
+      });
+    }
+
+    buildIndex();
 
     function renderResults(query) {
       resultsEl.innerHTML = '';
       activeIndex = -1;
       var q = query.trim().toLowerCase();
-      var matches = !q ? index.filter(function (i) { return i.current; }) : index.filter(function (i) {
-        return i.title.toLowerCase().indexOf(q) !== -1 || i.page.toLowerCase().indexOf(q) !== -1;
-      });
-      // De-duplicate by href, cap results
+      var matches;
+      if (!q) {
+        matches = index.filter(function (i) { return i.page === pageLabel(currentPage); });
+      } else {
+        matches = index.filter(function (i) {
+          return i.title.toLowerCase().indexOf(q) !== -1 ||
+            i.body.toLowerCase().indexOf(q) !== -1 ||
+            i.page.toLowerCase().indexOf(q) !== -1;
+        });
+      }
+
       var byHref = {};
       matches = matches.filter(function (m) {
         if (byHref[m.href]) return false;
@@ -2425,7 +2470,9 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
       }).slice(0, 40);
 
       if (matches.length === 0) {
-        resultsEl.innerHTML = '<div class="search-empty">No results for "' + query + '"</div>';
+        resultsEl.innerHTML = '<div class="search-empty">' +
+          (q && !indexReady ? 'Still indexing the rest of the site — try again in a moment…' : 'No results for "' + query + '"') +
+          '</div>';
         return;
       }
 
@@ -2433,7 +2480,12 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
         var item = document.createElement('a');
         item.className = 'search-result';
         item.href = m.href;
-        item.innerHTML = '<span class="search-result-title">' + m.title + '</span>' +
+        var snippetHtml = m.snippet ? '<span class="search-result-snippet">' + m.snippet + (m.body.length > m.snippet.length ? '…' : '') + '</span>' : '';
+        item.innerHTML =
+          '<span class="search-result-main">' +
+            '<span class="search-result-title">' + m.title + '</span>' +
+            snippetHtml +
+          '</span>' +
           '<span class="search-result-page">' + m.page + '</span>';
         item.addEventListener('mouseenter', function () { setActive(i); });
         item.addEventListener('click', closeModal);
@@ -2468,7 +2520,11 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
 
-    input.addEventListener('input', function () { renderResults(input.value); });
+    input.addEventListener('input', function () {
+      clearTimeout(pendingRender);
+      var val = input.value;
+      pendingRender = setTimeout(function () { renderResults(val); }, 80);
+    });
 
     input.addEventListener('keydown', function (e) {
       var items = resultsEl.querySelectorAll('.search-result');
