@@ -2112,29 +2112,23 @@
         return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
       }
 
-      // Build one searchable entry per heading, combined with the body text that
-      // follows it (up to the next heading), so a search matches real page
-      // content, not just section titles.
       function indexDocument(doc, file) {
         var content = doc.querySelector('.content');
         if (!content) return;
-        var headings = content.querySelectorAll('h1, h2[id], h3[id]');
+        var headings = content.querySelectorAll('h1, h2, h3, h4');
         headings.forEach(function (h) {
           var title = h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim();
           var parts = [];
           var el = h.nextElementSibling;
-          var guard = 0;
-          while (el && !/^H[1-3]$/.test(el.tagName) && guard < 10) {
+          while (el && !/^H[1-4]$/.test(el.tagName)) {
             var t = cleanText(el);
             if (t) parts.push(t);
             el = el.nextElementSibling;
-            guard++;
           }
           var body = parts.join(' ');
           index.push({
             title: title,
             body: body,
-            snippet: body.slice(0, 180),
             href: file + (h.id ? '#' + h.id : ''),
             page: pageLabel(file)
           });
@@ -2163,25 +2157,43 @@
 
       buildIndex();
 
+      // Count every occurrence of the query inside a block of text (used for
+      // full-text relevance ranking and the "N matches" badge).
+      function countMatches(text, q) {
+        if (!q) return 0;
+        var count = 0, pos = 0, hay = text.toLowerCase();
+        while ((pos = hay.indexOf(q, pos)) !== -1) { count++; pos += q.length; }
+        return count;
+      }
+
+      function makeSnippet(text, q) {
+        var low = text.toLowerCase();
+        var i = q ? low.indexOf(q) : -1;
+        if (i === -1) return text.slice(0, 180);
+        var start = Math.max(0, i - 60);
+        return (start > 0 ? '…' : '') + text.slice(start, start + 200) + '…';
+      }
+
       function renderResults(query) {
         resultsEl.innerHTML = '';
         activeIndex = -1;
         var q = query.trim().toLowerCase();
         var matches;
         if (!q) {
-          matches = index.filter(function (i) { return i.page === pageLabel(currentPage); });
+          matches = index.filter(function (i) { return i.page === pageLabel(currentPage); })
+            .map(function (i) { return { entry: i, count: 0 }; });
         } else {
-          matches = index.filter(function (i) {
-            return i.title.toLowerCase().indexOf(q) !== -1 ||
-              i.body.toLowerCase().indexOf(q) !== -1 ||
-              i.page.toLowerCase().indexOf(q) !== -1;
-          });
+          matches = index.map(function (i) {
+            var count = countMatches(i.title, q) * 3 + countMatches(i.body, q);
+            return { entry: i, count: count };
+          }).filter(function (m) { return m.count > 0; });
+          matches.sort(function (a, b) { return b.count - a.count; });
         }
 
         var byHref = {};
         matches = matches.filter(function (m) {
-          if (byHref[m.href]) return false;
-          byHref[m.href] = true;
+          if (byHref[m.entry.href]) return false;
+          byHref[m.entry.href] = true;
           return true;
         }).slice(0, 40);
 
@@ -2193,16 +2205,19 @@
         }
 
         matches.forEach(function (m, i) {
+          var entry = m.entry;
           var item = document.createElement('a');
           item.className = 'search-result';
-          item.href = m.href;
-          var snippetHtml = m.snippet ? '<span class="search-result-snippet">' + m.snippet + (m.body.length > m.snippet.length ? '…' : '') + '</span>' : '';
+          item.href = entry.href;
+          var snippetText = q ? makeSnippet(entry.body, q) : entry.body.slice(0, 180);
+          var snippetHtml = snippetText ? '<span class="search-result-snippet">' + snippetText + '</span>' : '';
+          var countBadge = q ? ' <span class="search-result-page">' + m.count + ' match' + (m.count === 1 ? '' : 'es') + '</span>' : '';
           item.innerHTML =
             '<span class="search-result-main">' +
-            '<span class="search-result-title">' + m.title + '</span>' +
+            '<span class="search-result-title">' + entry.title + '</span>' +
             snippetHtml +
             '</span>' +
-            '<span class="search-result-page">' + m.page + '</span>';
+            '<span class="search-result-page">' + entry.page + '</span>' + countBadge;
           item.addEventListener('mouseenter', function () { setActive(i); });
           item.addEventListener('click', closeModal);
           resultsEl.appendChild(item);
