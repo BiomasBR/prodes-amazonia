@@ -2257,7 +2257,7 @@
       function indexDocument(doc, file) {
         var content = doc.querySelector('.content');
         if (!content) return;
-        var headings = content.querySelectorAll('h1[id], h2[id], h3[id]');
+        var headings = content.querySelectorAll('h1, h2[id], h3[id]');
         headings.forEach(function (h) {
           var title = h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim();
           var parts = [];
@@ -2274,7 +2274,7 @@
             title: title,
             body: body,
             snippet: body.slice(0, 180),
-            href: file + '#' + h.id,
+            href: file + (h.id ? '#' + h.id : ''),
             page: pageLabel(file)
           });
         });
