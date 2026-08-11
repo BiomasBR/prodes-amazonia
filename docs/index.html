@@ -371,6 +371,20 @@
       color: var(--text-faint)
     }
 
+    /* ── In-page highlight for a term reached via search ── */
+    mark.search-highlight {
+      background: #ffe066;
+      color: #1a1a1a;
+      border-radius: .2em;
+      padding: .05em .15em;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+    }
+    [data-theme="dark"] mark.search-highlight {
+      background: #7c5cff;
+      color: #ffffff;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.15);
+    }
+
     .nb-link {
       font-family: var(--sans);
       font-size: .82rem;
@@ -2567,7 +2581,8 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
         var entry = m.entry;
         var item = document.createElement('a');
         item.className = 'search-result';
-        item.href = entry.href;
+        var hrefParts = entry.href.split('#');
+        item.href = hrefParts[0] + '?hl=' + encodeURIComponent(q) + (hrefParts[1] ? '#' + hrefParts[1] : '');
         var snippetText = makeSnippet(entry.body, q);
         item.innerHTML =
           '<span class="search-result-main">' +
@@ -2636,6 +2651,30 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
       }
       if (e.key === 'Escape' && !overlay.hidden) closeModal();
     });
+  })();
+
+  // ── Highlight the searched term when arriving via a search result ──
+  (function () {
+    var q = new URLSearchParams(window.location.search).get('hl');
+    if (!q) return;
+    var content = document.querySelector('.content');
+    if (!content) return;
+    var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    function walk(node) {
+      if (node.nodeType === 3) {
+        if (node.nodeValue && re.test(node.nodeValue)) {
+          var span = document.createElement('span');
+          span.innerHTML = node.nodeValue.replace(re, '<mark class="search-highlight">$1</mark>');
+          node.parentNode.replaceChild(span, node);
+        }
+      } else if (node.nodeType === 1 && !/^(SCRIPT|STYLE|MARK)$/.test(node.tagName)) {
+        Array.prototype.slice.call(node.childNodes).forEach(walk);
+      }
+    }
+    Array.prototype.slice.call(content.childNodes).forEach(walk);
+    var first = content.querySelector('mark.search-highlight');
+    if (first) setTimeout(function () { first.scrollIntoView({ block: 'center' }); }, 60);
+    history.replaceState(null, '', window.location.pathname + window.location.hash);
   })();
 
   /* ── "On this page" panel — limited to the top-level sections only ── */
