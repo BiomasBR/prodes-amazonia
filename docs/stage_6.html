@@ -2083,24 +2083,25 @@
         return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
       }
 
+      // Index by <section> — the real content unit on every page (headings sit
+      // inside a nested .page-header div, not as siblings of the body text, so
+      // each section's OWN text — minus any nested sub-sections — is captured
+      // directly, covering every paragraph, caption, table and code block).
       function indexDocument(doc, file) {
         var content = doc.querySelector('.content');
         if (!content) return;
-        var headings = content.querySelectorAll('h1, h2, h3, h4');
-        headings.forEach(function (h) {
-          var title = h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim();
-          var parts = [];
-          var el = h.nextElementSibling;
-          while (el && !/^H[1-4]$/.test(el.tagName)) {
-            var t = cleanText(el);
-            if (t) parts.push(t);
-            el = el.nextElementSibling;
-          }
-          var body = parts.join(' ');
+        var sections = content.querySelectorAll('section[id]');
+        sections.forEach(function (section) {
+          var clone = section.cloneNode(true);
+          clone.querySelectorAll('section, script, style').forEach(function (el) { el.remove(); });
+          var headingEl = clone.querySelector('h1, h2, h3, h4');
+          var title = headingEl ? headingEl.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim() : pageLabel(file);
+          var body = clone.textContent.replace(/\s+/g, ' ').trim();
+          if (!body) return;
           index.push({
             title: title,
             body: body,
-            href: file + (h.id ? '#' + h.id : ''),
+            href: file + '#' + section.id,
             page: pageLabel(file)
           });
         });
@@ -2118,20 +2119,15 @@
               var doc = new DOMParser().parseFromString(html, 'text/html');
               indexDocument(doc, file);
             })
-            .catch(function () { /* page unreachable (e.g. offline file:// use) — skipped gracefully */ });
+            .catch(function () { /* page unreachable — skipped gracefully */ });
         });
-        Promise.all(tasks).then(function () {
-          indexReady = true;
-          if (!overlay.hidden) renderResults(input.value);
-        });
+        Promise.all(tasks).then(function () { indexReady = true; });
       }
 
       buildIndex();
 
-      // Count every occurrence of the query inside a block of text (used for
-      // full-text relevance ranking and the "N matches" badge).
+      // Count every occurrence of the query inside a block of text.
       function countMatches(text, q) {
-        if (!q) return 0;
         var count = 0, pos = 0, hay = text.toLowerCase();
         while ((pos = hay.indexOf(q, pos)) !== -1) { count++; pos += q.length; }
         return count;
@@ -2139,38 +2135,29 @@
 
       function makeSnippet(text, q) {
         var low = text.toLowerCase();
-        var i = q ? low.indexOf(q) : -1;
+        var i = low.indexOf(q);
         if (i === -1) return text.slice(0, 180);
         var start = Math.max(0, i - 60);
         return (start > 0 ? '…' : '') + text.slice(start, start + 200) + '…';
       }
 
+      // Empty query → show nothing at all (no default suggestions).
       function renderResults(query) {
         resultsEl.innerHTML = '';
         activeIndex = -1;
         var q = query.trim().toLowerCase();
-        var matches;
-        if (!q) {
-          matches = index.filter(function (i) { return i.page === pageLabel(currentPage); })
-            .map(function (i) { return { entry: i, count: 0 }; });
-        } else {
-          matches = index.map(function (i) {
-            var count = countMatches(i.title, q) * 3 + countMatches(i.body, q);
-            return { entry: i, count: count };
-          }).filter(function (m) { return m.count > 0; });
-          matches.sort(function (a, b) { return b.count - a.count; });
-        }
+        if (!q) return;
 
-        var byHref = {};
-        matches = matches.filter(function (m) {
-          if (byHref[m.entry.href]) return false;
-          byHref[m.entry.href] = true;
-          return true;
-        }).slice(0, 40);
+        var matches = index.map(function (i) {
+          var count = countMatches(i.title, q) * 3 + countMatches(i.body, q);
+          return { entry: i, count: count };
+        }).filter(function (m) { return m.count > 0; });
+        matches.sort(function (a, b) { return b.count - a.count; });
+        matches = matches.slice(0, 40);
 
         if (matches.length === 0) {
           resultsEl.innerHTML = '<div class="search-empty">' +
-            (q && !indexReady ? 'Still indexing the rest of the site — try again in a moment…' : 'No results for "' + query + '"') +
+            (!indexReady ? 'Still indexing the rest of the site — try again in a moment…' : 'No results for "' + query + '"') +
             '</div>';
           return;
         }
@@ -2180,15 +2167,13 @@
           var item = document.createElement('a');
           item.className = 'search-result';
           item.href = entry.href;
-          var snippetText = q ? makeSnippet(entry.body, q) : entry.body.slice(0, 180);
-          var snippetHtml = snippetText ? '<span class="search-result-snippet">' + snippetText + '</span>' : '';
-          var countBadge = q ? ' <span class="search-result-page">' + m.count + ' match' + (m.count === 1 ? '' : 'es') + '</span>' : '';
+          var snippetText = makeSnippet(entry.body, q);
           item.innerHTML =
             '<span class="search-result-main">' +
             '<span class="search-result-title">' + entry.title + '</span>' +
-            snippetHtml +
+            '<span class="search-result-snippet">' + snippetText + '</span>' +
             '</span>' +
-            '<span class="search-result-page">' + entry.page + '</span>' + countBadge;
+            '<span class="search-result-page">' + entry.page + ' · ' + m.count + ' match' + (m.count === 1 ? '' : 'es') + '</span>';
           item.addEventListener('mouseenter', function () { setActive(i); });
           item.addEventListener('click', closeModal);
           resultsEl.appendChild(item);
@@ -2209,7 +2194,7 @@
         overlay.hidden = false;
         document.body.style.overflow = 'hidden';
         input.value = '';
-        renderResults('');
+        resultsEl.innerHTML = '';
         setTimeout(function () { input.focus(); }, 10);
       }
 
