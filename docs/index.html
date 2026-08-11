@@ -2556,6 +2556,18 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
       return (start > 0 ? '…' : '') + text.slice(start, start + 200) + '…';
     }
 
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Highlight every match of the query inline, in the results list itself.
+    function highlightText(text, q) {
+      var esc = escapeHtml(text);
+      if (!q) return esc;
+      var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return esc.replace(re, '<mark class="search-highlight">$1</mark>');
+    }
+
     // Empty query → show nothing at all (no default suggestions).
     function renderResults(query) {
       resultsEl.innerHTML = '';
@@ -2586,8 +2598,8 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
         var snippetText = makeSnippet(entry.body, q);
         item.innerHTML =
           '<span class="search-result-main">' +
-          '<span class="search-result-title">' + entry.title + '</span>' +
-          '<span class="search-result-snippet">' + snippetText + '</span>' +
+          '<span class="search-result-title">' + highlightText(entry.title, q) + '</span>' +
+          '<span class="search-result-snippet">' + highlightText(snippetText, q) + '</span>' +
           '</span>' +
           '<span class="search-result-page">' + entry.page + ' · ' + m.count + ' match' + (m.count === 1 ? '' : 'es') + '</span>';
         item.addEventListener('mouseenter', function () { setActive(i); });
