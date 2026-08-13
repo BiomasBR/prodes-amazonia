@@ -1943,28 +1943,114 @@
             and describes the complete processing workflow, including model training, classification, and
             post-processing.
 
-          </p>
-
-          <h2 id="agradecimentos"></span>About the authors</h2>
-          <p>
-            The website was developed by the BiomasBR Amazônia team: Cassiano Messias, Miguel Alexandre da
-            Cunha, Guilherme Correa, Gustavo Salgado, and Igor Cunha.
-
-            We sincerely thank the Brazil Data Cube team, especially Gilberto Câmara, for his valuable contributions and
-            continuous support.
-
-            This work was supported by the National Council for Scientific and Technological Development (CNPq) and the
-            National Institute for Space Research (INPE).
-
-
           <p>
 
-          <div class="callout note">
-            <div class="callout-title">📖 Note</div>
-            <p>All scripts are available at <a href="https://github.com/BiomasBR/prodes-amazonia"
-                target="_blank">github.com/BiomasBR/prodes-amazonia</a>. For theoretical background, refer to the Simões
-              et al., 2021 <sup><a href="#ref2" id="cite2">[2]</a></sup>.</p>
-          </div>
+          <!-- ═══ INTRODUCTION ════════════════════════════════════════════════════ -->
+          <section id="introduction" class="section">
+            <div class="page-header">
+              <div class="page-eyebrow">Chapter 1</div>
+              <h1 class="page-title">Introduction</h1>
+              <!--<p class="page-subtitle">Context, paradigm, and key concepts</p>-->
+            </div>
+
+            <p>The National Institute for Space Research (INPE), within the scope of the Deforestation Monitoring
+              Project (Prodes), has been monitoring annual forest clearing in the Brazilian Amazon using satellite
+              imagery since 1988 <sup><a href="#ref1" id="cite1">[1]</a></sup>. </p>
+              
+            <figure id="fig-svd" style="text-align: center;">
+              <figcaption style="margin-bottom: 6px;">
+                <strong>Figure 0.1:</strong>
+                Boundaries of Brazilian biomes. The Amazon biome is shown in green.
+              </figcaption>
+              <img src="figures/biomes.png" style="max-width:500px;">
+              <figcaption style="margin-top: 6px; font-size: 0.9em;">
+                Source: INPE (2026) & Google Earth (2006).
+              </figcaption>
+            </figure>
+
+              <p></p>
+              Over more than three decades, this initiative has become one of the most consistent
+              forest monitoring programs worldwide. Since 1992, 1,787 articles across 576 journals 
+              have cited and/or referenced PRODES, demonstrating the credibility and relevance of 
+              the data developed by the program <sup><a href="#ref3"
+                  id="cite3">[3]</a></sup>.</p>
+
+            <p>Building upon this extensive experience, the Brazilian Biomes Satellite Monitoring Program (BiomasBR) was
+              established with the goal of advancing native vegetation monitoring across the entire Brazilian territory.
+              Throughout its evolution, Prodes has expanded its scope beyond the Amazon Forest, incorporating non-forest 
+              vegetation areas in 2022 <sup><a href="#ref4" id="cite4">[4]</a></sup>. The program integrates the knowledge 
+              accumulated through the Prodes mapping series—originally developed for the Amazon — with other Brazilian biomes: 
+              the Atlantic Forest, Caatinga, Cerrado, Pampa, and Pantanal
+              <sup><a href="#ref4" id="cite4">[4]</a></sup>.
+            </p>
+
+            <p>Recently, PRODES Amazônia has experienced several methodological improvements that reduced uncertainties in land use and 
+              land cover change detection. Since 2023, incorporated Sentinel-1 imagery that has expanded monitoring capabilities in areas 
+              affected by persistent cloud cover. In 2024, the methodology has shifted from Landsat-8/9 (30-meter spatial resolution) to the 
+              16-day Sentinel-2 time-series image cubes from the Brazil Data Cube (BDC) <sup><a href="#ref5" id="cite5">[5]</a></sup>, 
+              providing data at 10-meter spatial resolution and enabling more detailed mapping of vegetation changes for its analysts. This integration 
+              of multi-sensor data represents an important step toward more robust and timely monitoring of environmental changes <sup><a href="#ref6" id="cite6">[6]</a></sup>. 
+              Other aspects have also evolved, including changes in the minimum mapping unit, from 6.5 ha to 1 ha since 2015 <sup><a href="#ref1" id="cite1">[1]</a></sup>, 
+              and the mapping scale, from 1:75.000 to 1:50.000 since 2024.
+            </p>
+
+            <p> Several studies have focused on improving deforestation monitoring systems, motivated by the growing demand from society 
+              for faster and more accurate information <sup><a href="#ref9"id="cite9">[9]</a></sup>. These data are essential for supporting 
+              a wide range of public policies and private-sector decision-making processes in Brazil. These required efforts 
+              have been costly, time-consuming, and relies on lots manual work by multiple analysts <sup><a href="#ref9"id="cite9">[9]</a></sup>. 
+            </p>
+
+            <p>In this context, the present document aims to describe a structural transition in biome-scale
+              deforestation monitoring through the incorporation of Artificial Intelligence (AI) techniques into the visual
+              interpretation and delineation of deforestation polygons. The new approach seeks to improve processing efficiency while
+              maintaining the high accuracy standards historically achieved by Prodes.
+            </p>
+
+            <p>The PRODES Amazonia methodology implements, since 2026, a comprehensive machine learning and deep learning-based land cover 
+              classification pipeline tailored for monitoring deforestation and land use dynamics in the Brazilian Amazon. The workflow extends 
+              from Linear Spectral Mixture Modeling (LSMM) and image segmentation by the Simple Non-Iterative Clustering (SNIC) algorithm, through 
+              time series sampling and quality assessment using Self-Organizing Map (SOM), to training multiple classifiers (Random Forest, XGBoost, 
+              Temporal CNN, and LTAE) and image-series classifications. Post-classification steps integrate official PRODES deforestation masks, apply 
+              smoothing and spatial filtering. The system supports both compute area estimates with bias correction following Olofsson et al. (2014) 
+              and includes an active learning module to iteratively improve model performance by targeting uncertain pixels. Built upon the sits 
+              R package and TensorFlow/Keras backends, the approach ensures reproducible, scalable, and accurate land cover monitoring.
+            </p>
+
+            <!-- ═══ FLOWCHART ════════════════════════════════════════════════════════ -->
+        <section id="flowchart" class="section">
+  <div class="page-header">
+    <h1 class="page-title">Flowchart</h1>
+    <p class="page-subtitle">Workflow across all steps</p>
+  </div>
+
+  <p>The diagram shows all steps, SITS functions, and decision nodes. Click on the interactive zoom viewer.</p>
+  <!--<h2 id="diagram"><span class="sec-num">R.2</span>Full Diagram</h2>-->
+  <div class="diagram-wrap">
+    <div class="diagram-head">
+  <div style="display:flex; gap:6px; align-items:center;">
+    <button class="zoom-btn" onclick="fcZoom(-0.2)">− Zoom out</button>
+    <button class="zoom-btn" onclick="fcZoom(+0.2)">+ Zoom in</button>
+    <button class="zoom-btn" onclick="fcReset()" style="margin-left:4px;">↺ Reset</button>
+  </div>
+</div>
+<div class="diagram-body">
+  <div id="fc-container"
+       style="overflow:hidden; width:100%; height:500px; cursor:grab; user-select:none;">
+    <img id="fc-img"
+         src="pipeline_flowchart.svg"
+         style="transform-origin:top left; display:block; transition:transform 0.15s;"
+         alt="Pipeline flowchart">
+  </div>
+</div>
+</div>
+  <h3 id="legend">Legend</h3>
+  <div class="legend-grid">
+    <div class="legend-item"><div class="lsw lsw-cube"></div>Data Cube / Object</div>
+    <div class="legend-item"><div class="lsw lsw-func"></div>Function / Process</div>
+    <div class="legend-item"><div class="lsw lsw-file"></div>Saved File (.gpkg / .rds)</div>
+    <div class="legend-item"><div class="lsw lsw-logic"></div>Decision / Logic</div>
+  </div>
+</section>
 
           <h2 id="pipeline-overview"><span class="sec-num"></span>Scripts overview</h2>
 
@@ -2093,61 +2179,13 @@
               display: inline-block;
             }
           </style>
-
-
-          <!-- ═══ INTRODUCTION ════════════════════════════════════════════════════ -->
-          <section id="introduction" class="section">
-            <div class="page-header">
-              <div class="page-eyebrow">Chapter 1</div>
-              <h1 class="page-title">Introduction</h1>
-              <!--<p class="page-subtitle">Context, paradigm, and key concepts</p>-->
-            </div>
-
-            <p>The National Institute for Space Research (INPE), within the scope of the Deforestation Monitoring
-              Project (Prodes), has been monitoring annual forest clearing in the Brazilian Amazon using satellite
-              imagery since 1988 <sup><a href="#ref1" id="cite1">[1]</a></sup>. Over more
-              than three decades, this initiative has become one of the most consistent
-              forest monitoring programs worldwide. Expanding its scope beyond the
-              Amazon Forest, incorporating non-forest vegetation areas in 2022 <sup><a href="#ref3"
-                  id="cite3">[3]</a></sup>.</p>
-
-            <p>Building upon this extensive experience, the Brazilian Biomes Satellite Monitoring Program (BiomasBR) was
-              established with the goal of advancing native vegetation monitoring across the entire Brazilian territory.
-              The program integrates the knowledge accumulated through the Prodes mapping series—originally developed
-              for the Amazon — with other Brazilian biomes: the Atlantic Forest, Caatinga, Cerrado, Pampa, and Pantanal
-              <sup><a href="#ref3" id="cite3b">[3]</a></sup>.
-            </p>
-
-            <p>Prodes has experienced several methodological improvements, for instance incorporated the Sentinel-2
-              imagery, providing data at 10-meter spatial resolution and enabling more detailed mapping of vegetation
-              changes
-              <sup><a href="#ref1" id="cite1b">[1]</a></sup>. Other aspects have also evolved, including changes in the
-              mapping
-              scale (from 1:75.000 to 1:50.000) and the minimum mapping unit (from x to y).
-            </p>
-
-            <p>Since 2024, the methodology has incorporated Sentinel-1 data and 16-day temporal composites from the
-              Brazil Data Cube (BDC) <sup><a href="#ref4" id="cite4">[4]</a></sup>, the result was improved monitoring
-              of
-              areas affected by persistent cloud cover and reducing uncertainties in land use and land cover change
-              detection. This
-              integration of multi-sensor data represents an important step toward more robust and timely monitoring of
-              environmental changes <sup><a href="#ref5" id="cite5">[5]</a></sup>.</p>
-
-            <p>Several studies have focused on improving deforestation monitoring systems, motivated by
-              the growing demand from society for faster and more accurate information <sup><a href="#ref9"
-                  id="cite9">[9]</a></sup>. These data are essential for supporting a wide range of public policies and
-              private-sector decision-making processes in Brazil.
-              The effort required by the Prodes is costly, time-consuming, and relies on manual work by multiple
-              analysts <sup><a href="#ref8" id="cite8">[8]</a></sup>.
-            </p>
-
-            <p>In this context, the present document aims to describe a structural transition in biome-scale
-              deforestation monitoring through the incorporation of Artificial Intelligence techniques into the visual
-              interpretation
-              and delineation of deforestation polygons. The new approach seeks to improve processing efficiency while
-              maintaining the high accuracy standards historically achieved by Prodes.
-            </p>
+          
+                    <div class="callout note">
+            <div class="callout-title">📖 Note</div>
+            <p>All scripts are available at <a href="https://github.com/BiomasBR/prodes-amazonia"
+                target="_blank">github.com/BiomasBR/prodes-amazonia</a>. For theoretical background, refer to the Simões
+              et al., 2021 <sup><a href="#ref2" id="cite2">[2]</a></sup>.</p>
+          </div>
 
           </section>
 
@@ -2321,42 +2359,169 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
 │   └── plots/                  
   </div>
 </section>
+            <h2 id="libraries"><span class="sec-num">2.4</span>Hardware Requirements</h2>
+            <div class="sys-req-tile">
+  <div class="sys-req-header">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
 
-<!-- ═══ FLOWCHART ════════════════════════════════════════════════════════ -->
-<section id="flowchart" class="section">
-  <div class="page-header">
-    <h1 class="page-title">Flowchart</h1>
-    <p class="page-subtitle">Workflow across all scripts</p>
   </div>
 
-  <p>The diagram shows all steps, SITS functions, and decision nodes. Click on the interactive zoom viewer.</p>
-  <!--<h2 id="diagram"><span class="sec-num">R.2</span>Full Diagram</h2>-->
-  <div class="diagram-wrap">
-    <div class="diagram-head">
-  <div style="display:flex; gap:6px; align-items:center;">
-    <button class="zoom-btn" onclick="fcZoom(-0.2)">− Zoom out</button>
-    <button class="zoom-btn" onclick="fcZoom(+0.2)">+ Zoom in</button>
-    <button class="zoom-btn" onclick="fcReset()" style="margin-left:4px;">↺ Reset</button>
+  <div class="req-section">
+    <div class="req-title minimum">
+      <span class="badge">Minimum</span>
+    </div>
+    <ul class="req-list">
+      <li><strong>16 GB</strong> RAM</li>
+      <li><strong>4-core</strong> CPU</li>
+      <li><strong>100 GB</strong> free disk space <span class="subtext">(cubes and results are large)</span></li>
+    </ul>
+  </div>
+
+  <hr class="divider">
+
+  <div class="req-section">
+    <div class="req-title recommended">
+      <span class="badge">Recommended</span>
+      <span class="context">(for deep learning and large areas)</span>
+    </div>
+    <ul class="req-list">
+      <li><strong>32+ GB</strong> RAM</li>
+      <li><strong>NVIDIA GPU</strong> with ≥8 GB VRAM (CUDA-compatible)</li>
+      <li><strong>SSD storage</strong> for data cubes</li>
+    </ul>
+  </div>
+
+  <div class="note-box">
+    <div class="note-icon">💡</div>
+    <div class="note-content">
+      Processing a full Landsat scene (~1 GB compressed) with multiple temporal layers can require <strong>&gt;50 GB RAM</strong> if not tiled. The scripts in <code>05_classification.R</code> include tiling options to reduce memory load.
+    </div>
   </div>
 </div>
-<div class="diagram-body">
-  <div id="fc-container"
-       style="overflow:hidden; width:100%; height:500px; cursor:grab; user-select:none;">
-    <img id="fc-img"
-         src="pipeline_flowchart.svg"
-         style="transform-origin:top left; display:block; transition:transform 0.15s;"
-         alt="Pipeline flowchart">
-  </div>
-</div>
-</div>
-  <h3 id="legend">Legend</h3>
-  <div class="legend-grid">
-    <div class="legend-item"><div class="lsw lsw-cube"></div>Data Cube / Object</div>
-    <div class="legend-item"><div class="lsw lsw-func"></div>Function / Process</div>
-    <div class="legend-item"><div class="lsw lsw-file"></div>Saved File (.gpkg / .rds)</div>
-    <div class="legend-item"><div class="lsw lsw-logic"></div>Decision / Logic</div>
-  </div>
-</section>
+
+<style>
+  .sys-req-tile {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 500px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    color: #1e293b;
+  }
+
+  .sys-req-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    color: #0f172a;
+  }
+
+  .sys-req-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .req-section {
+    margin-bottom: 12px;
+  }
+
+  .req-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .minimum .badge {
+    background-color: #fef3c7;
+    color: #b45309;
+  }
+
+  .recommended .badge {
+    background-color: #d1fae5;
+    color: #047857;
+  }
+
+  .context {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  .req-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .req-list li {
+    position: relative;
+    padding-left: 18px;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: #334155;
+  }
+
+  .req-list li::before {
+    content: "•";
+    position: absolute;
+    left: 4px;
+    color: #94a3b8;
+    font-weight: bold;
+  }
+
+  .subtext {
+    color: #64748b;
+    font-size: 0.85em;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #f1f5f9;
+    margin: 14px 0;
+  }
+
+  .note-box {
+    display: flex;
+    gap: 10px;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #3b82f6;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 16px;
+    font-size: 0.825rem;
+    color: #475569;
+    line-height: 1.45;
+  }
+
+  .note-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .note-box code {
+    background-color: #e2e8f0;
+    color: #0f172a;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.85em;
+  }
+</style>            
 
 <!-- ═══ REFERENCES ════════════════════════════════════════════════════════ -->
 <section id="references" class="section">
@@ -2366,31 +2531,55 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
   <div style="font-family:var(--sans);font-size:.9rem;line-height:1.9">
   <div id="ref1"><a href="#cite1">[1] </a>Almeida, C. A., Maurano, L. E. P., Valeriano, D. M., Câmara, G., Vinhas, L., Motta, M., Gomes, A. R., Monteiro, A. M. V., Souza, A. A. A., Messias, C. G., Rennó, C. D., Adami, M., Escada, M. I. S., Soler, L. S., &amp; Amaral, S.</strong> (2022).
   <strong>Metodologia utilizada nos sistemas Prodes e Deter – 2ª edição (atualizada)</strong>. <em>2. ed. São José dos Campos: INPE</em>, 47 p.</div>
+
   <div id="ref2"><a href="#cite2">[2] </a>Simões, R., Câmara, G., Queiroz, G., Souza, F., Andrade, P., Santos, L., Carvalho, A., &amp; Ferreira, K.</strong> (2021).
     Satellite Image Time Series Analysis for Big Earth Observation Data.<em> Remote Sensing, 13</em> (13), 2428.</div>
-  <div id="ref3"><a href="#cite3">[3] </a>Instituto Nacional de Pesquisas Espaciais (INPE).</strong> (2023).
+
+  <div id="ref3"><a href="#cite3">[3] </a>Instituto Nacional de Pesquisas Espaciais (INPE).</strong> (2026). 
+    <strong>Lista de artigos em revistas científicas que fazem citação / referência ao PRODES</strong>. Programa de Monitoramento dos Biomas Brasileiros (BiomasBR).
+    <em>Available at: <a href="https://data.inpe.br/biomasbr/citacoes-2026/" target="_blank">https://data.inpe.br/biomasbr/citacoes-2026/</a></em>.</div>
+  
+  <div id="ref4"><a href="#cite4">[4] </a>Instituto Nacional de Pesquisas Espaciais (INPE).</strong> (2023).
     <strong>Prodes Monitoramento Anual da Supressão da Vegetação Nativa</strong>. Programa de Monitoramento dos Biomas Brasileiros (BiomasBR).
     <em>Available at: <a href="https://data.inpe.br/biomasbr/prodes-monitoramento-anual-da-supressao-de-vegetacao-nativa/" target="_blank">https://data.inpe.br/biomasbr/prodes-monitoramento-anual-da-supressao-de-vegetacao-nativa</a></em>.</div>
-  <div id="ref4"><a href="#cite4">[4] </a>Ferreira, K. R., Queiroz, G. R., Vinhas, L., Marujo, R. F. B., Simões, R. E. O., Picoli, M. C. A., Câmara, G., Cartaxo, R., Gomes, V. C. F., Santos, L. A., Sanchez, A. H., Arcanjo, J. S., Fronza, J. G., Noronha, C. A., Costa, R. W., Zaglia, M. C., Zioti, F., Körting, T. S., Soares, A. R., Chaves, M. E. D., &amp; Fonseca, L. M. G.</strong> (2020).
+  
+    <div id="ref5"><a href="#cite5">[5] </a>Ferreira, K. R., Queiroz, G. R., Vinhas, L., Marujo, R. F. B., Simões, R. E. O., Picoli, M. C. A., Câmara, G., Cartaxo, R., Gomes, V. C. F., Santos, L. A., Sanchez, A. H., Arcanjo, J. S., Fronza, J. G., Noronha, C. A., Costa, R. W., Zaglia, M. C., Zioti, F., Körting, T. S., Soares, A. R., Chaves, M. E. D., &amp; Fonseca, L. M. G.</strong> (2020).
     Earth Observation Data Cubes for Brazil: Requirements, Methodology and Products.
-    <em>Remote Sensing, 12</em>(24), 4033. https://doi.org/10.3390/rs12244033</div>
-  <div id="ref5"><a href="#cite5">[5] </a>Ferrari, F., Ferreira, M. P., &amp; Feitosa, R. Q.</strong> (2023).
+    <em>Remote Sensing, 12</em>(24), 4033. <a href="https://doi.org/10.3390/rs12244033" target="_blank">https://doi.org/10.3390/rs12244033</a></em>.</div>
+
+  <div id="ref6"><a href="#cite6">[6] </a>Ferrari, F., Ferreira, M. P., &amp; Feitosa, R. Q.</strong> (2023).
     Fusing Sentinel-1 and Sentinel-2 Images with Transformer-Based Network for Deforestation Detection in the Brazilian Amazon Under Diverse Cloud Conditions.
-    <em>ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, X-1/W1</em>, 999–1006. https://doi.org/10.5194/isprs-annals-X-1-W1-2023-999-2023</div>
-  <div id="ref6"><a href="#cite6">[6] </a>Shimabukuro, Y. E., Santos, J. R., Formaggio, A. R., Duarte, V., &amp; Rudorff, B. F. T.</strong> (2013).
+    <em>ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, X-1/W1</em>, 999–1006. <a href="https://doi.org/10.5194/isprs-annals-X-1-W1-2023-999-2023" target="_blank">https://doi.org/10.5194/isprs-annals-X-1-W1-2023-999-2023</a></em>.</div>
+
+  <div id="ref7"><a href="#cite7">[7] </a>Shimabukuro, Y. E., Santos, J. R., Formaggio, A. R., Duarte, V., &amp; Rudorff, B. F. T.</strong> (2013).
     The Brazilian Amazon Monitoring Program: PRODES and DETER Projects. In F. Achard &amp; M. C. Hansen (Eds.),
     <em>Global Forest Monitoring from Earth Observation</em> (pp. 153–169). CRC Press, Taylor &amp; Francis Group. ISBN 978-1-4665-5201-2.</div>
-  <div id="ref7"><a href="#cite7">[7] </a>Maretto, R. V., Fonseca, L. M. G., Jacobs, N., Körting, T. S., Bendini, H. N., &amp; Parente, L. L.</strong> (2021).
+
+  <div id="ref8"><a href="#cite8">[8] </a>Maretto, R. V., Fonseca, L. M. G., Jacobs, N., Körting, T. S., Bendini, H. N., &amp; Parente, L. L.</strong> (2021).
     Spatio-Temporal Deep Learning Approach to Map Deforestation in Amazon Rainforest.
-    <em>IEEE Geoscience and Remote Sensing Letters, 18</em>(5), 771–775. https://doi.org/10.1109/LGRS.2020.2986407</div>
-  <div id="ref8"><a href="#cite8">[8] </a>Hansen, M. C., Potapov, P. V., Moore, R., Hancher, M., Turubanova, S. A., Tyukavina, A., Thau, D., Stehman, S. V., Goetz, S. J., Loveland, T. R., Kommareddy, A., Egorov, A., Chini, L., Justice, C. O., &amp; Townshend, J. R. G.</strong> (2013).
+    <em>IEEE Geoscience and Remote Sensing Letters, 18</em>(5), 771–775. <a href="https://doi.org/10.1109/LGRS.2020.2986407" target="_blank">https://doi.org/10.1109/LGRS.2020.2986407</a></em>.</div>
+
+  <div id="ref9"><a href="#cite9">[9] </a>Hansen, M. C., Potapov, P. V., Moore, R., Hancher, M., Turubanova, S. A., Tyukavina, A., Thau, D., Stehman, S. V., Goetz, S. J., Loveland, T. R., Kommareddy, A., Egorov, A., Chini, L., Justice, C. O., &amp; Townshend, J. R. G.</strong> (2013).
     High-Resolution Global Maps of 21st-Century Forest Cover Change.
-    <em>Science, 342</em>(6160), 850–853. https://doi.org/10.1126/science.1244693</div>
+    <em>Science, 342</em>(6160), 850–853. <a href="https://doi.org/10.1126/science.1244693" target="_blank">https://doi.org/10.1126/science.1244693</a></em>.</div>
 
   <div class="page-nav">
     <a class="pnav-btn" href="index.html#setup"><span class="pnav-dir">← Previous</span><span class="pnav-title">Setup</span></a>
     <a class="pnav-btn pnav-next" href="stage_1.html"><span class="pnav-dir">Next →</span><span class="pnav-title">Stage 1: Linear Spectral Mixture Model</span></a>
   </div>
+
+
+          <h2 id="agradecimentos"></span>About the authors</h2>
+          <p>
+            The website was developed by the BiomasBR Amazônia team: Cassiano Messias, Miguel Alexandre da
+            Cunha, Guilherme Gomes Correa, Gustavo Piva Lopes Salgado, and Igor Cunha.
+
+            We sincerely thank the Brazil Data Cube team, especially Gilberto Câmara, for his valuable contributions and
+            continuous support.
+
+            This work was supported by the National Council for Scientific and Technological Development (CNPq) and the
+            National Institute for Space Research (INPE).
+
 </section>
 
 <!--<script>
