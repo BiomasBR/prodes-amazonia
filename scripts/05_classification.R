@@ -32,7 +32,7 @@ vector_path  <- "data/segments"
 class_path   <- "data/class"
 plots_path   <- "data/plots/accuracy"
 log_path     <- "data/logs"
-n_cores      <- 28
+n_cores      <- 16
 
 dir.create(log_path, recursive = TRUE, showWarnings = FALSE)
 log_file <- file.path(log_path, paste0("erros_classificacao_",
@@ -121,7 +121,7 @@ for (tile in tiles) {
       data       = local_segs_cube,
       ml_model   = model,
       multicores = n_cores,
-      memsize    = 180,
+      memsize    = 120,
       output_dir = tile_period_dir,
       version    = version,
       verbose    = TRUE,
@@ -137,7 +137,8 @@ for (tile in tiles) {
       label_method = label_method,
       version      = paste(version, label_method, sep = "-"),
       multicores   = n_cores,
-      memsize      = 180,
+      memsize      = 120,
+      max_cells_in_memory = 01e+09,
       progress     = TRUE
     )
     cat("Tile", tile, "finalizada com sucesso!\n")
