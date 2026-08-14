@@ -13,20 +13,19 @@ library(purrr)
 library(stringr)
 
 # Define the parameters: These are user-defined variables
-model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-08-03_eco-3-mt-46d_2026-08-03_16h02m.rds"
-version     <- "tcnn-2y-eco-3-mt-46d-mean"
-tiles       <- c('024018','023019','024017','024013','025014','025015','024015','023014',
-                 '019015','025016','023015','025017','020019','010017','025019','023020',
-                 '022014','018020','017023','016023','022013','025018','022020','021020',
-                 '017017','024019','026016','016017','026014','010016','018014','027013',
-                 '018019','027014','012015','015021','020018','019016','015018','019020',
-                 '026015','027012')
+model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_eco-3-mt-46d-gpu_2026-08-13_21h59m.rds"
+version     <- "tcnn-2y-eco-3-mt-46d-gpu-mean"
+tiles       <- c('023017')
 
 # File and folder paths
 seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular"
 class_path  <- "data/class"
 mask_path   <- "data/raw/auxiliary/mask_geral_amz_v2025.gpkg"
 config_dir  <- ".."
+
+# Brazil Albers Equal Area (EPSG 10857)
+crs_proc <- "PROJCRS[\"unknown\",\n    BASEGEOGCRS[\"unknown\",\n        DATUM[\"Unknown based on GRS80 ellipsoid\",\n            ELLIPSOID[\"GRS 1980\",6378137,298.257222101004,\n                LENGTHUNIT[\"metre\",1],\n                ID[\"EPSG\",7019]]],\n        PRIMEM[\"Greenwich\",0,\n            ANGLEUNIT[\"degree\",0.0174532925199433,\n                ID[\"EPSG\",9122]]]],\n    CONVERSION[\"Albers Equal Area\",\n        METHOD[\"Albers Equal Area\",\n            ID[\"EPSG\",9822]],\n        PARAMETER[\"Latitude of false origin\",-12,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8821]],\n        PARAMETER[\"Longitude of false origin\",-54,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8822]],\n        PARAMETER[\"Latitude of 1st standard parallel\",-2,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8823]],\n        PARAMETER[\"Latitude of 2nd standard parallel\",-22,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8824]],\n        PARAMETER[\"Easting at false origin\",5000000,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8826]],\n        PARAMETER[\"Northing at false origin\",10000000,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8827]]],\n    CS[Cartesian,2],\n        AXIS[\"easting\",east,\n            ORDER[1],\n            LENGTHUNIT[\"metre\",1,\n                ID[\"EPSG\",9001]]],\n        AXIS[\"northing\",north,\n            ORDER[2],\n            LENGTHUNIT[\"metre\",1,\n                ID[\"EPSG\",9001]]]]"
+crs_final <- 4674
 
 models <- c("rf"   = "random_forest",
             "xgb"  = "xgboost",
@@ -41,7 +40,8 @@ years <- regmatches(version, regexpr("\\d+y", version))
 
 # Biome boundary (shared by all tiles, loaded only once)
 biome <- read_sf("data/raw/auxiliary/amazon-biome-border-epsg10857.gpkg") |>
-  st_make_valid()
+  st_make_valid() |>
+  st_transform(crs_proc)
 
 edge_tiles <- c(
   "001014", "002011", "002012", "002013", "002014", "002015", "002016",
@@ -110,7 +110,6 @@ extract_cloud_mask <- function(
     stop("Could not extract tile_id from file name: ", filename_base)
   }
   
-  message(" -> Tile: ", tile_id)
   message(" -> SCL time window: ", start_date_scl, " to ", end_date_scl)
   
   # ----------------------------------------------------------
@@ -261,8 +260,8 @@ remove_cloud_areas <- function(
 }
 
 # 3.3 Calculate area, perimeter, shared boundaries and equivalent radius
-calculate_edge_metrics <- function(class, prodes_mask, crs_planar = 5880) {
-
+calculate_edge_metrics <- function(class, prodes_mask, crs_planar) {
+  
   # Preserves the original state of S2 and ensures restoration upon completion of execution
   s2_state <- sf_use_s2()
   on.exit(sf_use_s2(s2_state), add = TRUE)
@@ -315,15 +314,66 @@ calculate_edge_metrics <- function(class, prodes_mask, crs_planar = 5880) {
   return(class)
 }
 
+# 3.4 Assign Class By Intersection
+assign_class_by_intersection <- function(supression_polygons, vector_multipolygons) {
+  
+  s2_state <- sf::sf_use_s2()
+  on.exit(sf::sf_use_s2(s2_state), add = TRUE)
+  sf::sf_use_s2(FALSE)
+  
+  vector_multipolygons_valid <- vector_multipolygons |>
+    sf::st_transform(sf::st_crs(supression_polygons)) |>
+    sf::st_make_valid()
+  
+  supression_polygons <- sf::st_make_valid(supression_polygons) |>
+    dplyr::mutate(.id_pai = dplyr::row_number())
+  
+  # ---- 1. Interseção: uma feição separada por trecho/classe sobreposta ----
+  intersecao <- sf::st_intersection(supression_polygons, vector_multipolygons_valid) |>
+    sf::st_collection_extract("POLYGON") |>
+    sf::st_cast("MULTIPOLYGON")
+  
+  # ---- 2. Classe majoritária por polígono-pai (maior área de interseção) --
+  #    usada só para herdar as sobras -----------------------------------
+  classe_majoritaria <- intersecao |>
+    dplyr::mutate(area_intersec = sf::st_area(intersecao)) |>
+    sf::st_drop_geometry() |>
+    dplyr::group_by(.id_pai) |>
+    dplyr::slice_max(order_by = area_intersec, n = 1, with_ties = FALSE) |>
+    dplyr::select(.id_pai, class_majoritaria = class)
+  
+  # ---- 3. Parte de cada polígono sem nenhuma correspondência de classe ----
+  classes_union <- sf::st_union(vector_multipolygons_valid)
+  
+  sobras <- supression_polygons |>
+    sf::st_difference(classes_union) |>
+    sf::st_collection_extract("POLYGON") |>
+    sf::st_cast("MULTIPOLYGON")
+  
+  sobras <- sobras[!sf::st_is_empty(sf::st_geometry(sobras)), ]
+  
+  # ---- 4. Sobras herdam a classe majoritária do seu polígono-pai ----------
+  #    (se o pai não teve NENHUMA interseção, não há de onde herdar -> NA)
+  sobras <- sobras |>
+    dplyr::left_join(classe_majoritaria, by = ".id_pai") |>
+    dplyr::rename(class = class_majoritaria)
+  
+  resultado <- dplyr::bind_rows(intersecao, sobras) |>
+    dplyr::select(-.id_pai) |>
+    sf::st_make_valid()
+  
+  return(resultado)
+}
+
 # ============================================================
 # 4. Main function: process ONE tile
 # ============================================================
 
 process_tile <- function(tile) {
   
-  message("\n==============================")
+  message("\n======================================")
   message("Starting tile post-processing: ", tile)
-  message("==============================")
+  message("========================================")
   
   # ---- Step 1.3 -- defines the path for the classification raster ----
   raw_class_path <- list.files(
@@ -358,6 +408,9 @@ process_tile <- function(tile) {
     classe = sits_labels(model)
   )
   
+  # salvar projeção da classificação (ex: 10857)
+  crs_proc <- crs(raw_class)
+  
   labels <- c('Clear_Cut', 'Clear_Cut_Herbaceous','Mininig')
   
   labels_ids <- match(labels, sits_labels(model))
@@ -384,14 +437,29 @@ process_tile <- function(tile) {
   vector_class <- as.polygons(deforest_class, aggregate = TRUE)
   names(vector_class) <- "class"
   vector_multipolygons <- aggregate(vector_class, by = "class")
-  vector_multipolygons <- sf::st_as_sf(vector_multipolygons)
+  vector_multipolygons <- sf::st_as_sf(vector_multipolygons) |>
+    sf::st_make_valid()
   
   # ----------------------------------------------------------
-  # 3. Extraction of cloud features
+  # Remove polygons outside the biome border
+  # ----------------------------------------------------------
+  
+  if (tile %in% edge_tiles) {
+    message(" -> The tile ", tile, " is an edge tile. Running intersection.")
+    class_biome <- st_intersection(vector_multipolygons, biome)
+  } else {
+    message(" -> The tile ", tile, " is not an edge tile. Intersection ignored.")
+    class_biome <- vector_multipolygons
+  }
+  
+  sf::st_write(class_biome, dsn = file.path(post_class_path,paste0("1-class_biome.gpkg")), delete_dsn = TRUE)
+  
+  # ----------------------------------------------------------
+  # Extraction of cloud features
   # ----------------------------------------------------------
   result <- extract_cloud_mask(
     sits_classification_path = raw_class_path,
-    sits_reclassification    = vector_multipolygons,
+    sits_reclassification    = class_biome,
     cloud_values             = c(3, 8, 9, 10),
     output_dir               = post_class_path
   )
@@ -400,28 +468,60 @@ process_tile <- function(tile) {
   end_date_scl <- result$end_date_scl
   
   # ----------------------------------------------------------
-  # 4. Cloud/shadow difference
+  # Cloud/shadow difference
   # ----------------------------------------------------------
+  
   sits_classification_cloud_cleaned <- remove_cloud_areas(
-    sits_reclassification = vector_multipolygons,
+    sits_reclassification = class_biome,
     cloud_vec             = cloud_vec,  # NULL se nao houver nuvens
     buffer_dist           = 100
   )
   
+  sf::st_write(sits_classification_cloud_cleaned, dsn = file.path(post_class_path,paste0("2-sits_classification_cloud_cleaned.gpkg")), delete_dsn = TRUE)
+  
   # ----------------------------------------------------------
-  # 5. Fill holes < 1 hectare
+  # Remove polygons < 1 hectare
   # ----------------------------------------------------------
+  
   query <- sprintf("SELECT * FROM mascara_geral_amz_v2025 WHERE tile = '%s'", tile)
-  prodes_mask <- read_sf(mask_path, query = query)
   
-  prodes_mask <- sf::st_transform(
-    prodes_mask,
-    sf::st_crs(sits_classification_cloud_cleaned)
-  )
+  prodes_mask_4674 <- read_sf(mask_path, query = query)   # Save an untouched copy of the mask in 4674 before redesigning
   
-  merged <- list(sits_classification_cloud_cleaned, prodes_mask) |>
+  mask_union <- sf::st_transform(prodes_mask_4674, crs_proc) |>
+    sf::st_set_precision(1000) |> # 1000 = coordinates rounded to the nearest 1/1000 m (1 mm))
+    sf::st_make_valid()
+    
+  sf::st_write(mask_union, dsn = file.path(post_class_path, paste0("01-projected_mask.gpkg")), delete_dsn = TRUE)
+  
+  message(" -> Removing polygons < 1 hectare (keeping those that intersect mask_union)")
+  
+  sits_classification_cloud_cleaned$area_m2 <- as.numeric(sf::st_area(sits_classification_cloud_cleaned))
+  sits_classification_cloud_cleaned$area_ha <- sits_classification_cloud_cleaned$area_m2 / 10000
+  
+  # Identify which polygons touch or overlap the mask
+  sits_classification_cloud_cleaned$touches_mask <- lengths(
+    sf::st_intersects(sits_classification_cloud_cleaned, mask_union)
+  ) > 0
+  
+  # Filter: Area >= 1ha OR touches the mask
+  class_filtered <- sits_classification_cloud_cleaned |>
+    dplyr::filter(area_ha >= 1 | touches_mask == TRUE)|>
+    sf::st_cast("POLYGON") |>
+    sf::st_set_precision(1000) |>
+    sf::st_make_valid()
+  
+  sf::st_write(class_filtered, dsn = file.path(post_class_path,paste0("3-class_filtered.gpkg")), delete_dsn = TRUE)
+  
+  # ----------------------------------------------------------
+  # Fill holes < 1 hectare
+  # ----------------------------------------------------------
+
+  message(" -> Merging polygons with PRODES mask")
+  
+  merged <- list(class_filtered, mask_union) |>
     purrr::map(sf::st_make_valid) |>
-    purrr::map(\(x) sf::st_transform(x, sf::st_crs(sits_classification_cloud_cleaned))) |>
+    purrr::map(\(x) sf::st_transform(x, crs_proc)) |>
+    #purrr::map(\(x) sf::st_set_precision(x, 1000)) |>
     purrr::map(\(x) {
       sf::st_geometry(x) <- "geom"
       x
@@ -430,103 +530,89 @@ process_tile <- function(tile) {
     dplyr::bind_rows() |>
     sf::st_union()
   
+  sf::st_write(merged, dsn = file.path(post_class_path,paste0("4-merged.gpkg")), delete_dsn = TRUE)
+  
+  message(" -> Filling holes < 1 ha")
+  
   smoothed <- smoothr::fill_holes(
     merged,
-    threshold = units::set_units(10000, "m^2")
-  )
+    threshold = units::set_units(10000, "m^2")) |>
+    sf::st_set_precision(1000) |>
+    sf::st_make_valid()
+  
+  sf::st_write(smoothed, dsn = file.path(post_class_path,paste0("5-smoothed.gpkg")), delete_dsn = TRUE)
   
   # ----------------------------------------------------------
-  # 6. Difference with deforestation mask
+  # Difference with deforestation mask
   # ----------------------------------------------------------
-  smoothed <- sf::st_transform(smoothed, sf::st_crs(prodes_mask)) |>
-    st_make_valid()
   
-  prodes_mask <- prodes_mask |>
-    st_make_valid()
-  
-  mask_union <- prodes_mask |>
-    st_union() |>
-    st_make_valid()
+  message(" -> Taking off the PRODES mask")
   
   class_diff_mask <- sf::st_difference(
+    # sf::st_set_precision(smoothed, 1000),
+    # sf::st_set_precision(mask_union, 1000)
     smoothed,
-    mask_union
-  ) |> sf::st_collection_extract("POLYGON") |>
+    mask_union) |>
+    sf::st_collection_extract("POLYGON") |>
     sf::st_cast("POLYGON") |>
-    sf::st_sf()
+    sf::st_sf()|>
+    sf::st_make_valid()|>
+    sf::st_buffer(0) |>
+    sf::st_make_valid()
   
-  # ----------------------------------------------------------
-  # 7. Remove polygons outside the biome border
-  # ----------------------------------------------------------
-  biome_tile <- st_transform(biome, st_crs(class_diff_mask))
+  sf::st_write(class_diff_mask, dsn = file.path(post_class_path,paste0("6-class_diff_mask.gpkg")), delete_dsn = TRUE)
   
-  if (tile %in% edge_tiles) {
-    message("The tile ", tile, " is an edge tile. Running intersection.")
-    class_biome <- st_intersection(class_diff_mask, biome_tile)
-  } else {
-    message("The tile ", tile, " is not an edge tile. Intersection ignored.")
-    class_biome <- class_diff_mask
-  }
+  # # ----------------------------------------------------------
+  # SNAP
+  # # ----------------------------------------------------------
   
-  # ----------------------------------------------------------
-  # 8. Remove polygons < 1 hectare
-  # ----------------------------------------------------------
-  class_biome$area_m2 <- as.numeric(sf::st_area(class_biome))
-  class_biome$area_ha <- class_biome$area_m2 / 10000
+  message(" -> Snapping polygons to PRODES mask")
   
-  class_biome_bigger_than_1ha <- class_biome |>
-    dplyr::filter(area_ha >= 1)
-  
-  supression_polygons <- st_transform(
-    class_biome_bigger_than_1ha,
-    crs = 4674
+  snapped <- sf::st_snap(
+    sf::st_set_precision(class_diff_mask, 1000),
+    sf::st_set_precision(mask_union, 1000),
+    tolerance = 1
   ) |>
+    sf::st_make_valid() |>
+    sf::st_difference(sf::st_set_precision(mask_union, 1000)) |>
+    sf::st_collection_extract("POLYGON") |>
+    sf::st_cast("MULTIPOLYGON") |>
     sf::st_cast("POLYGON") |>
     sf::st_make_valid()
   
+  sf::st_write(snapped, dsn = file.path(post_class_path,paste0("7-snapped.gpkg")), delete_dsn = TRUE)
+  
   # # ----------------------------------------------------------
-  # # 9. Calculate old boundaries polygons
+  # # Remove old boundaries polygons
   # # ----------------------------------------------------------
-
+  
+  message(" -> Calculating shape metrics")
+  
   supression_polygons <- calculate_edge_metrics(
-    class = supression_polygons,
-    prodes_mask = prodes_mask,
-    crs_planar = 5880
+    class = class_diff_mask, #snapped,
+    prodes_mask = mask_union,
+    crs_planar = crs_proc
   )
+  
+  message(" -> Removing old boundaries polygons")
 
-  # # ----------------------------------------------------------
-  # # 10. Remove old boundaries polygons
-  # # ----------------------------------------------------------
-  # 
-   supression_polygons <- supression_polygons |>
-      dplyr::filter(!(prop_comp > 0.1 & prop_comp < 0.9 & raio_equivalente < 35)) |>
-      sf::st_transform(4674)
+  supression_polygons <- supression_polygons |>
+     dplyr::filter(!(prop_comp > 0.1 & prop_comp < 0.9 & raio_equivalente < 35))
+
+  sf::st_write(supression_polygons, dsn = file.path(post_class_path,paste0("8-oldboundaryless.gpkg")), delete_dsn = TRUE)
   
   # ----------------------------------------------------------
-  # 11. Assigns names of the classes with the greatest spatial intersection
+  # Assigns class to each feature by geometric intersection
   # ----------------------------------------------------------
-  sf_use_s2(FALSE)
   
-  vector_multipolygons_valid <- vector_multipolygons |>
-    st_transform(st_crs(supression_polygons)) |>
-    st_make_valid()
+  message(" -> Assigning class to each feature by geometric intersection")
   
-  supression_polygons <- supression_polygons |>
-    mutate(.id_temp = row_number())
+  sits_classes_intersection <- assign_class_by_intersection(
+    supression_polygons     = supression_polygons,
+    vector_multipolygons    = vector_multipolygons
+  )
   
-  intersecao <- st_intersection(supression_polygons, vector_multipolygons_valid)
-  intersecao$area_intersec <- st_area(intersecao)
-  maior_classe <- intersecao |>
-    st_drop_geometry() |>
-    group_by(.id_temp) |>
-    slice_max(order_by = area_intersec, n = 1, with_ties = FALSE) |>
-    select(.id_temp, class)
-  
-  supression_polygons <- supression_polygons |>
-    left_join(maior_classe, by = ".id_temp") |>
-    select(-.id_temp)
-  
-  sf_use_s2(TRUE)
+  sf::st_write(sits_classes_intersection, dsn = file.path(post_class_path,paste0("9-oldboundaryless.gpkg")), delete_dsn = TRUE)
   
   # ----------------------------------------------------------
   # 12. Select Boundaries Segments
@@ -549,19 +635,24 @@ process_tile <- function(tile) {
       "\nAdjust the search pattern (or remove duplicate files) so that only 1 remains."
     )
   }
+
+  message(" -> Grouping segments with classification polygons")
   
-  sf_use_s2(FALSE)
+  exclude_union <- st_union(
+    st_union(st_make_valid(supression_polygons)),
+    sf::st_set_precision(mask_union, 1000)
+  ) |>
+    sf::st_set_precision(1000)
   
   segments <- read_sf(
     vector_path,
     wkt_filter = st_as_text(st_combine(st_transform(st_make_valid(supression_polygons), st_layers(vector_path)$crs[[1]])))
   ) |>
-    st_transform(st_crs(supression_polygons)) |>
+    st_transform(crs_proc) |>
     st_make_valid() |>
-    st_difference(st_union(st_union(st_make_valid(supression_polygons)), st_make_valid(st_transform(mask_union, st_crs(supression_polygons))))) |>
+    sf::st_set_precision(1000) |>
+    st_difference(exclude_union)|>
     dplyr::filter(!st_is_empty(geom))
-  
-  sf_use_s2(TRUE)
   
   # ----------------------------------------------------------
   # 13. Save final result
@@ -576,18 +667,22 @@ process_tile <- function(tile) {
         "fid", 
         "class"
       ))
-    )
+    )|>
+    sf::st_transform(crs_final)
   
   output_file <- file.path(
     post_class_path,
-    paste0("class-post-processed_",
+    paste0("rascunho-sits_t",
            tile, "_",
            years, "_",
-           end_date_scl, "_",
-           version, ".gpkg")
+           end_date_scl, 
+           #"_",version, 
+           ".gpkg")
   )
   
   sf::st_write(merged_polygons, dsn = output_file, delete_dsn = TRUE)
+  
+  
   
   message("Tile ", tile, " successfully processed -> ", output_file)
   
@@ -611,13 +706,13 @@ for (tile in tiles) {
             process_tile(tile)
           },
           warning = function(w) {
-            message("AVISO no tile ", tile, ": ", conditionMessage(w))
+            message("WARNING in tile ", tile, ": ", conditionMessage(w))
             invokeRestart("muffleWarning")
           }
         )
       },
       error = function(e) {
-        message("ERRO no tile ", tile, ": ", conditionMessage(e))
+        message("ERROR in tile ", tile, ": ", conditionMessage(e))
         NULL  # marca falha e permite que o loop continue para o proximo tile
       }
     )
