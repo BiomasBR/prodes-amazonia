@@ -379,6 +379,7 @@
       padding: .05em .15em;
       box-shadow: 0 0 0 1px rgba(30, 107, 60, .25);
     }
+
     [data-theme="dark"] mark.search-highlight {
       background: rgba(88, 166, 255, .16);
       color: var(--link);
@@ -1942,24 +1943,25 @@
             space-later approach. This user manual was developed for <code>Version 1.0</code>, initiated in August 2026,
             and describes the complete processing workflow, including model training, classification, and
             post-processing.
-
           <p>
 
-          <!-- ═══ INTRODUCTION ════════════════════════════════════════════════════ -->
+            <!-- ═══ INTRODUCTION ════════════════════════════════════════════════════ -->
           <section id="introduction" class="section">
             <div class="page-header">
               <div class="page-eyebrow">Chapter 1</div>
               <h1 class="page-title">Introduction</h1>
-              <!--<p class="page-subtitle">Context, paradigm, and key concepts</p>-->
             </div>
 
             <p>The National Institute for Space Research (INPE), within the scope of the Deforestation Monitoring
               Project (Prodes), has been monitoring annual forest clearing in the Brazilian Amazon using satellite
-              imagery since 1988 <sup><a href="#ref1" id="cite1">[1]</a></sup>. </p>
-              
+              imagery since 1988 <sup><a href="#ref1" id="cite1">[1]</a></sup>. Over more than three decades, this
+              initiative has become one of the most consistent forest monitoring programs worldwide. A total of 1,787
+              articles across 576 journals have cited and/or referenced Prodes, demonstrating the credibility and
+              relevance of the data developed by the program <sup><a href="#ref3" id="cite3">[3]</a></sup>.</p>
+
             <figure id="fig-svd" style="text-align: center;">
               <figcaption style="margin-bottom: 6px;">
-                <strong>Figure 0.1:</strong>
+                <strong>Figure 1:</strong>
                 Boundaries of Brazilian biomes. The Amazon biome is shown in green.
               </figcaption>
               <img src="figures/biomes.png" style="max-width:500px;">
@@ -1968,224 +1970,247 @@
               </figcaption>
             </figure>
 
-              <p></p>
-              Over more than three decades, this initiative has become one of the most consistent
-              forest monitoring programs worldwide. Since 1992, 1,787 articles across 576 journals 
-              have cited and/or referenced PRODES, demonstrating the credibility and relevance of 
-              the data developed by the program <sup><a href="#ref3"
-                  id="cite3">[3]</a></sup>.</p>
+            <p>
+            </p>
 
-            <p>Building upon this extensive experience, the Brazilian Biomes Satellite Monitoring Program (BiomasBR) was
+            <p>Building on this extensive experience, the Brazilian Biomes Satellite Monitoring Program (BiomasBR) was
               established with the goal of advancing native vegetation monitoring across the entire Brazilian territory.
-              Throughout its evolution, Prodes has expanded its scope beyond the Amazon Forest, incorporating non-forest 
-              vegetation areas in 2022 <sup><a href="#ref4" id="cite4">[4]</a></sup>. The program integrates the knowledge 
-              accumulated through the Prodes mapping series—originally developed for the Amazon — with other Brazilian biomes: 
-              the Atlantic Forest, Caatinga, Cerrado, Pampa, and Pantanal
-              <sup><a href="#ref4" id="cite4">[4]</a></sup>.
+              In 2022, the program expanded its scope to include non-forest vegetation areas <sup><a href="#ref4"
+                  id="cite4">[4]</a></sup> and integrated the knowledge accumulated through mapping series originally
+              developed for the Amazon with monitoring efforts across other biomes: the Atlantic Forest,
+              Caatinga, Cerrado, Pampa, and Pantanal <sup><a href="#ref4" id="cite4">[4]</a></sup>.
             </p>
 
-            <p>Recently, PRODES Amazônia has experienced several methodological improvements that reduced uncertainties in land use and 
-              land cover change detection. Since 2023, incorporated Sentinel-1 imagery that has expanded monitoring capabilities in areas 
-              affected by persistent cloud cover. In 2024, the methodology has shifted from Landsat-8/9 (30-meter spatial resolution) to the 
-              16-day Sentinel-2 time-series image cubes from the Brazil Data Cube (BDC) <sup><a href="#ref5" id="cite5">[5]</a></sup>, 
-              providing data at 10-meter spatial resolution and enabling more detailed mapping of vegetation changes for its analysts. This integration 
-              of multi-sensor data represents an important step toward more robust and timely monitoring of environmental changes <sup><a href="#ref6" id="cite6">[6]</a></sup>. 
-              Other aspects have also evolved, including changes in the minimum mapping unit, from 6.5 ha to 1 ha since 2015 <sup><a href="#ref1" id="cite1">[1]</a></sup>, 
-              and the mapping scale, from 1:75.000 to 1:50.000 since 2024.
-            </p>
+            <p>Prodes Amazônia has experienced several methodological improvements that have reduced
+              uncertainties in detecting land-use and land-cover changes.
+              The incorporation of Sentinel-1 imagery and the shift from Landsat-8/9 imagery, with a 30-meter spatial
+              resolution, to 16-day Sentinel-2 time-series image cubes from the Brazil Data Cube (BDC) <sup><a
+                  href="#ref5" id="cite5">[5]</a></sup> enable analysts to map vegetation changes in greater detail.
 
-            <p> Several studies have focused on improving deforestation monitoring systems, motivated by the growing demand from society 
-              for faster and more accurate information <sup><a href="#ref9"id="cite9">[9]</a></sup>. These data are essential for supporting 
-              a wide range of public policies and private-sector decision-making processes in Brazil. These required efforts 
-              have been costly, time-consuming, and relies on lots manual work by multiple analysts <sup><a href="#ref9"id="cite9">[9]</a></sup>. 
+            <p>This transition provides data at a 10-meter spatial resolution, enabling analysts to map vegetation
+              changes in greater detail. The integration of multi-sensor data represents an important step toward more
+              robust and timely monitoring of environmental changes <sup><a href="#ref6" id="cite6">[6]</a></sup>.
+
+              Other aspects of the methodology have also evolved, including a reduction in the minimum mapping unit from
+              6.5 ha to 1 ha since 2015 <sup><a href="#ref1" id="cite1">[1]</a></sup>, as well as a change in mapping
+              scale from 1:75,000 to 1:50,000.</p>
+
+            <p> Several studies have focused on improving deforestation monitoring systems, motivated by the growing
+              demand from society for faster and more accurate information <sup><a href="#ref9"
+                  id="cite9">[9]</a></sup>. These data are
+              essential for supporting
+              a wide range of public policies and private-sector decision-making processes in Brazil. These required
+              efforts
+              have been costly, time-consuming, and relies on lots manual work by multiple analysts <sup><a href="#ref9"
+                  id="cite9">[9]</a></sup>.
             </p>
 
             <p>In this context, the present document aims to describe a structural transition in biome-scale
-              deforestation monitoring through the incorporation of Artificial Intelligence (AI) techniques into the visual
-              interpretation and delineation of deforestation polygons. The new approach seeks to improve processing efficiency while
-              maintaining the high accuracy standards historically achieved by Prodes.
+              deforestation monitoring through the incorporation of Artificial Intelligence (AI) techniques into the
+              visual interpretation of deforestation polygons. The overall objective is to improve processing efficiency
+              while maintaining the high accuracy standards historically achieved by PRODES. Specifically, this work
+              aims to train and evaluate a Temporal Convolutional Neural Network (TempCNN) for the classification of
+              Sentinel-2 image time series in the Brazilian Amazon using the sits R package, assessing its performance,
+              limitations, and challenges for operational deforestation monitoring.
             </p>
 
-            <p>The PRODES Amazonia methodology implements, since 2026, a comprehensive machine learning and deep learning-based land cover 
-              classification pipeline tailored for monitoring deforestation and land use dynamics in the Brazilian Amazon. The workflow extends 
-              from Linear Spectral Mixture Modeling (LSMM) and image segmentation by the Simple Non-Iterative Clustering (SNIC) algorithm, through 
-              time series sampling and quality assessment using Self-Organizing Map (SOM), to training multiple classifiers (Random Forest, XGBoost, 
-              Temporal CNN, and LTAE) and image-series classifications. Post-classification steps integrate official PRODES deforestation masks, apply 
-              smoothing and spatial filtering. The system supports both compute area estimates with bias correction following Olofsson et al. (2014) 
-              and includes an active learning module to iteratively improve model performance by targeting uncertain pixels. Built upon the sits 
-              R package and TensorFlow/Keras backends, the approach ensures reproducible, scalable, and accurate land cover monitoring.
-            </p>
+            <!--<p>The PRODES Amazonia methodology implements, since 2026, a comprehensive machine learning and deep
+              learning-based land cover
+              classification pipeline tailored for monitoring deforestation and land use dynamics in the Brazilian
+              Amazon. The workflow extends
+              from Linear Spectral Mixture Modeling (LSMM) and image segmentation by the Simple Non-Iterative Clustering
+              (SNIC) algorithm, through
+              time series sampling and quality assessment using Self-Organizing Map (SOM), to training multiple
+              classifiers (Random Forest, XGBoost,
+              Temporal CNN, and LTAE) and image-series classifications. Post-classification steps integrate official
+              PRODES deforestation masks, apply
+              smoothing and spatial filtering. The system supports both compute area estimates with bias correction
+              following Olofsson et al. (2014)
+              and includes an active learning module to iteratively improve model performance by targeting uncertain
+              pixels. Built upon the sits
+              R package and TensorFlow/Keras backends, the approach ensures reproducible, scalable, and accurate land
+              cover monitoring.
+            </p>-->
 
             <!-- ═══ FLOWCHART ════════════════════════════════════════════════════════ -->
-        <section id="flowchart" class="section">
-  <div class="page-header">
-    <h1 class="page-title">Flowchart</h1>
-    <p class="page-subtitle">Workflow across all steps</p>
-  </div>
+            <section id="flowchart" class="section">
+              <div class="page-header">
+                <h1 class="page-title">Flowchart</h1>
+                <p class="page-subtitle">Workflow across all steps</p>
+              </div>
 
-  <p>The diagram shows all steps, SITS functions, and decision nodes. Click on the interactive zoom viewer.</p>
-  <!--<h2 id="diagram"><span class="sec-num">R.2</span>Full Diagram</h2>-->
-  <div class="diagram-wrap">
-    <div class="diagram-head">
-  <div style="display:flex; gap:6px; align-items:center;">
-    <button class="zoom-btn" onclick="fcZoom(-0.2)">− Zoom out</button>
-    <button class="zoom-btn" onclick="fcZoom(+0.2)">+ Zoom in</button>
-    <button class="zoom-btn" onclick="fcReset()" style="margin-left:4px;">↺ Reset</button>
-  </div>
-</div>
-<div class="diagram-body">
-  <div id="fc-container"
-       style="overflow:hidden; width:100%; height:500px; cursor:grab; user-select:none;">
-    <img id="fc-img"
-         src="pipeline_flowchart.svg"
-         style="transform-origin:top left; display:block; transition:transform 0.15s;"
-         alt="Pipeline flowchart">
-  </div>
-</div>
-</div>
-  <h3 id="legend">Legend</h3>
-  <div class="legend-grid">
-    <div class="legend-item"><div class="lsw lsw-cube"></div>Data Cube / Object</div>
-    <div class="legend-item"><div class="lsw lsw-func"></div>Function / Process</div>
-    <div class="legend-item"><div class="lsw lsw-file"></div>Saved File (.gpkg / .rds)</div>
-    <div class="legend-item"><div class="lsw lsw-logic"></div>Decision / Logic</div>
-  </div>
-</section>
+              <p>The diagram shows all steps, SITS functions, and decision nodes. Click on the interactive zoom viewer.
+              </p>
+              <!--<h2 id="diagram"><span class="sec-num">R.2</span>Full Diagram</h2>-->
+              <div class="diagram-wrap">
+                <div class="diagram-head">
+                  <div style="display:flex; gap:6px; align-items:center;">
+                    <button class="zoom-btn" onclick="fcZoom(-0.2)">− Zoom out</button>
+                    <button class="zoom-btn" onclick="fcZoom(+0.2)">+ Zoom in</button>
+                    <button class="zoom-btn" onclick="fcReset()" style="margin-left:4px;">↺ Reset</button>
+                  </div>
+                </div>
+                <div class="diagram-body">
+                  <div id="fc-container"
+                    style="overflow:hidden; width:100%; height:500px; cursor:grab; user-select:none;">
+                    <img id="fc-img" src="pipeline_flowchart.svg"
+                      style="transform-origin:top left; display:block; transition:transform 0.15s;"
+                      alt="Pipeline flowchart">
+                  </div>
+                </div>
+              </div>
+              <h3 id="legend">Legend</h3>
+              <div class="legend-grid">
+                <div class="legend-item">
+                  <div class="lsw lsw-cube"></div>Data Cube / Object
+                </div>
+                <div class="legend-item">
+                  <div class="lsw lsw-func"></div>Function / Process
+                </div>
+                <div class="legend-item">
+                  <div class="lsw lsw-file"></div>Saved File (.gpkg / .rds)
+                </div>
+                <div class="legend-item">
+                  <div class="lsw lsw-logic"></div>Decision / Logic
+                </div>
+              </div>
+            </section>
 
-          <h2 id="pipeline-overview"><span class="sec-num"></span>Scripts overview</h2>
+            <h2 id="pipeline-overview"><span class="sec-num"></span>Scripts overview</h2>
 
-          <div class="tbl-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Script</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><code>1_mixture_model.R</code></td>
-                  <td>Linear Spectral Mixture Model fraction bands</td>
-                </tr>
-                <tr>
-                  <td><code>2_segmentation.R</code></td>
-                  <td>Segmentation using Simple Non-Iterative Clustering algorithm</td>
-                </tr>
-                <tr>
-                  <td><code>3_time_series_sampling.R</code></td>
-                  <td>Extract training time series</td>
-                </tr>
-                <tr>
-                  <td><code>4_model_training_temp-cnn.R</code></td>
-                  <td>TempCNN training</td>
-                </tr>
-                <tr>
-                  <td><code>5_classification.R</code></td>
-                  <td>Vector data cube classification</td>
-                </tr>
-                <tr>
-                  <td><code>6_post_processing.R</code></td>
-                  <td>Post-processing</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            <div class="tbl-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Script</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>1_mixture_model.R</code></td>
+                    <td>Linear Spectral Mixture Model fraction bands</td>
+                  </tr>
+                  <tr>
+                    <td><code>2_segmentation.R</code></td>
+                    <td>Segmentation using Simple Non-Iterative Clustering algorithm</td>
+                  </tr>
+                  <tr>
+                    <td><code>3_time_series_sampling.R</code></td>
+                    <td>Extract training time series</td>
+                  </tr>
+                  <tr>
+                    <td><code>4_model_training_temp-cnn.R</code></td>
+                    <td>TempCNN training</td>
+                  </tr>
+                  <tr>
+                    <td><code>5_classification.R</code></td>
+                    <td>Vector data cube classification</td>
+                  </tr>
+                  <tr>
+                    <td><code>6_post_processing.R</code></td>
+                    <td>Post-processing</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-          <style>
-            .tbl-wrap {
-              width: 100%;
-              display: flex;
-              justify-content: center;
-              margin: 1.5rem 0 2rem;
-              overflow-x: auto;
-            }
+            <style>
+              .tbl-wrap {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                margin: 1.5rem 0 2rem;
+                overflow-x: auto;
+              }
 
-            .tbl-wrap table {
-              width: 90%;
-              max-width: 1000px;
-              border-collapse: collapse;
-              margin: 0 auto;
-            }
+              .tbl-wrap table {
+                width: 90%;
+                max-width: 1000px;
+                border-collapse: collapse;
+                margin: 0 auto;
+              }
 
-            #pipeline-overview {
-              text-align: left !important;
-              display: block;
-              width: 100%;
-              margin-left: 0;
-              margin-right: 0;
-            }
-
-
-            .tbl-wrap th,
-            .tbl-wrap td {
-              padding: 0.9rem 1.2rem;
-              text-align: center;
-              vertical-align: middle;
-              line-height: 1.5;
-            }
-
-            .tbl-wrap th {
-              font-weight: 600;
-            }
-
-            .tbl-wrap td:first-child {
-              white-space: nowrap;
-            }
-
-            .tbl-wrap code {
-              display: inline-block;
-            }
-          </style>
+              #pipeline-overview {
+                text-align: left !important;
+                display: block;
+                width: 100%;
+                margin-left: 0;
+                margin-right: 0;
+              }
 
 
-          <style>
-            #pipeline-overview {
-              text-align: center;
-              margin-bottom: 1.5rem;
-            }
+              .tbl-wrap th,
+              .tbl-wrap td {
+                padding: 0.9rem 1.2rem;
+                text-align: center;
+                vertical-align: middle;
+                line-height: 1.5;
+              }
 
-            .tbl-wrap {
-              width: 100%;
-              display: flex;
-              justify-content: center;
-              margin: 1.5rem 0 2rem;
-              overflow-x: auto;
-            }
+              .tbl-wrap th {
+                font-weight: 600;
+              }
 
-            .tbl-wrap table {
-              width: 90%;
-              max-width: 1000px;
-              border-collapse: collapse;
-              margin: 0 auto;
-            }
+              .tbl-wrap td:first-child {
+                white-space: nowrap;
+              }
 
-            .tbl-wrap th,
-            .tbl-wrap td {
-              padding: 0.9rem 1.2rem;
-              text-align: center;
-              vertical-align: middle;
-              line-height: 1.5;
-            }
+              .tbl-wrap code {
+                display: inline-block;
+              }
+            </style>
 
-            .tbl-wrap th {
-              font-weight: 600;
-            }
 
-            .tbl-wrap td:first-child {
-              white-space: nowrap;
-            }
+            <style>
+              #pipeline-overview {
+                text-align: center;
+                margin-bottom: 1.5rem;
+              }
 
-            .tbl-wrap code {
-              display: inline-block;
-            }
-          </style>
-          
-                    <div class="callout note">
-            <div class="callout-title">📖 Note</div>
-            <p>All scripts are available at <a href="https://github.com/BiomasBR/prodes-amazonia"
-                target="_blank">github.com/BiomasBR/prodes-amazonia</a>. For theoretical background, refer to the Simões
-              et al., 2021 <sup><a href="#ref2" id="cite2">[2]</a></sup>.</p>
-          </div>
+              .tbl-wrap {
+                width: 100%;
+                display: flex;
+                justify-content: center;
+                margin: 1.5rem 0 2rem;
+                overflow-x: auto;
+              }
+
+              .tbl-wrap table {
+                width: 90%;
+                max-width: 1000px;
+                border-collapse: collapse;
+                margin: 0 auto;
+              }
+
+              .tbl-wrap th,
+              .tbl-wrap td {
+                padding: 0.9rem 1.2rem;
+                text-align: center;
+                vertical-align: middle;
+                line-height: 1.5;
+              }
+
+              .tbl-wrap th {
+                font-weight: 600;
+              }
+
+              .tbl-wrap td:first-child {
+                white-space: nowrap;
+              }
+
+              .tbl-wrap code {
+                display: inline-block;
+              }
+            </style>
+
+            <div class="callout note">
+              <div class="callout-title">📖 Note</div>
+              <p>All scripts are available at <a href="https://github.com/BiomasBR/prodes-amazonia"
+                  target="_blank">github.com/BiomasBR/prodes-amazonia</a>. For theoretical background, refer to the
+                Simões
+                et al., 2021 <sup><a href="#ref2" id="cite2">[2]</a></sup>.</p>
+            </div>
 
           </section>
 
@@ -2392,7 +2417,7 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
   </div>
 
   <div class="note-box">
-    <div class="note-icon">💡</div>
+    <div class="note-icon"></div>
     <div class="note-content">
       Processing a full Landsat scene (~1 GB compressed) with multiple temporal layers can require <strong>&gt;50 GB RAM</strong> if not tiled. The scripts in <code>05_classification.R</code> include tiling options to reduce memory load.
     </div>
@@ -2563,22 +2588,16 @@ install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>
     High-Resolution Global Maps of 21st-Century Forest Cover Change.
     <em>Science, 342</em>(6160), 850–853. <a href="https://doi.org/10.1126/science.1244693" target="_blank">https://doi.org/10.1126/science.1244693</a></em>.</div>
 
-  <div class="page-nav">
+  <h2 id="agradecimentos"></span>About the authors</h2>
+  <p> Website developed by the BiomasBR Amazônia team: Cassiano Messias, Miguel Alexandre da Cunha, Guilherme Gomes Correa, Gustavo Piva Lopes Salgado, and Igor Cunha. We sincerely thank the Brazil Data Cube team, especially Gilberto Câmara, for his valuable contributions and
+            continuous support. This work was supported by the National Council for Scientific and Technological Development (CNPq) and the National Institute for Space Research (INPE).</p>
+  
+  
+  
+    <div class="page-nav">
     <a class="pnav-btn" href="index.html#setup"><span class="pnav-dir">← Previous</span><span class="pnav-title">Setup</span></a>
     <a class="pnav-btn pnav-next" href="stage_1.html"><span class="pnav-dir">Next →</span><span class="pnav-title">Stage 1: Linear Spectral Mixture Model</span></a>
   </div>
-
-
-          <h2 id="agradecimentos"></span>About the authors</h2>
-          <p>
-            The website was developed by the BiomasBR Amazônia team: Cassiano Messias, Miguel Alexandre da
-            Cunha, Guilherme Gomes Correa, Gustavo Piva Lopes Salgado, and Igor Cunha.
-
-            We sincerely thank the Brazil Data Cube team, especially Gilberto Câmara, for his valuable contributions and
-            continuous support.
-
-            This work was supported by the National Council for Scientific and Technological Development (CNPq) and the
-            National Institute for Space Research (INPE).
 
 </section>
 
