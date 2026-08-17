@@ -15,7 +15,7 @@ library(stringr)
 # Define the parameters: These are user-defined variables
 model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_eco-3-mt-46d-gpu_2026-08-13_21h59m.rds"
 version     <- "tcnn-2y-eco-3-mt-46d-mean"
-tiles       <- c('023017', '021016','021018','014015')
+tiles       <- c('024013','019015','025017','019020','015018','019016','027013','018014','016017','017017','016023')
 
 # File and folder paths
 seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular"
@@ -266,7 +266,7 @@ remove_cloud_areas <- function(
 }
 
 # Calculate area, perimeter, shared boundaries and equivalent radius
-calculate_edge_metrics <- function(class, prodes_mask, crs_planar) {
+calculate_edge_metrics <- function(class, prodes_mask) {
   
   # Preserves the original state of S2 and ensures restoration upon completion of execution
   s2_state <- sf_use_s2()
@@ -438,6 +438,10 @@ process_tile <- function(tile) {
   vector_multipolygons <- sf::st_as_sf(vector_multipolygons) |>
     sf::st_make_valid()
   
+  
+  rm(raw_class, deforest_class, vector_class)
+  gc()
+  
   # ----------------------------------------------------------
   # Remove polygons outside the biome border
   # ----------------------------------------------------------
@@ -451,7 +455,7 @@ process_tile <- function(tile) {
   }
   
   # sf::st_write(class_biome, dsn = file.path(post_class_path,paste0("1-class_biome.gpkg")), delete_dsn = TRUE)
-  
+
   # ----------------------------------------------------------
   # Extraction of cloud features
   # ----------------------------------------------------------
@@ -476,6 +480,9 @@ process_tile <- function(tile) {
   )
   
   # sf::st_write(sits_classification_cloud_cleaned, dsn = file.path(post_class_path,paste0("2-sits_classification_cloud_cleaned.gpkg")), delete_dsn = TRUE)
+
+  rm(result, cloud_vec, class_biome)
+  gc()
   
   # ----------------------------------------------------------
   # Remove polygons < 1 hectare
@@ -513,6 +520,9 @@ process_tile <- function(tile) {
   
   # sf::st_write(class_filtered, dsn = file.path(post_class_path,paste0("3-class_filtered.gpkg")), delete_dsn = TRUE)
   
+  rm(sits_classification_cloud_cleaned, prodes_mask_4674)
+  gc()
+  
   # ----------------------------------------------------------
   # Fill holes < 1 hectare
   # ----------------------------------------------------------
@@ -544,6 +554,9 @@ process_tile <- function(tile) {
   
   # sf::st_write(smoothed, dsn = file.path(post_class_path,paste0("5-smoothed.gpkg")), delete_dsn = TRUE)
   
+  rm(class_filtered, merged)
+  gc()
+  
   # ----------------------------------------------------------
   # Difference with deforestation mask
   # ----------------------------------------------------------
@@ -568,11 +581,10 @@ process_tile <- function(tile) {
   message(" -> Calculating shape metrics")
   
   supression_polygons <- calculate_edge_metrics(
-    class = class_diff_mask,
-    prodes_mask = mask_union,
-    crs_planar = crs_proc
-  )
-  
+              class = class_diff_mask,
+              prodes_mask = mask_union
+            )
+            
   message(" -> Removing old boundaries polygons")
 
   supression_polygons <- supression_polygons |>
@@ -582,6 +594,9 @@ process_tile <- function(tile) {
     sf::st_collection_extract("POLYGON")
 
   # sf::st_write(supression_polygons, dsn = file.path(post_class_path,paste0("7-oldboundaryless.gpkg")), delete_dsn = TRUE)
+  
+  rm(smoothed, class_diff_mask)
+  gc()
   
   # ----------------------------------------------------------
   # Assigns class to each feature by geometric intersection
@@ -595,6 +610,9 @@ process_tile <- function(tile) {
   )
   
   #sf::st_write(sits_classes_intersection, dsn = file.path(post_class_path,paste0("8-classes-assigned.gpkg")), delete_dsn = TRUE)
+  
+  rm(supression_polygons, vector_multipolygons)
+  gc()
   
   # ----------------------------------------------------------
   # 12. Select Boundaries Segments
@@ -653,6 +671,9 @@ process_tile <- function(tile) {
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
+  rm(exclude_union)
+  gc()
+  
   # ----------------------------------------------------------
   # 13. Save final result
   # ----------------------------------------------------------
@@ -684,6 +705,9 @@ process_tile <- function(tile) {
   sf::st_write(merged_polygons, dsn = output_file, delete_dsn = TRUE)
   
   message("Tile ", tile, " successfully processed -> ", output_file)
+  
+  rm(sits_classes_intersection, segments, merged_polygons, mask_union)
+  gc()
   
   return(invisible(output_file))
 }
