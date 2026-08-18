@@ -538,7 +538,7 @@ process_tile <- function(tile) {
   log_step_time("Step 6", t_step)
   
   # ----------------------------------------------------------
-  # 7. Fill holes < 1 hectare
+  # 7. Fill holes < 1.3 hectare
   # ----------------------------------------------------------
   t_step <- Sys.time()
   message("Step 7 of 10 -> Merging polygons with the PRODES cumulative mask.")
@@ -555,11 +555,11 @@ process_tile <- function(tile) {
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  message("Step 7 of 10 -> Filling holes < 1 ha.")
+  message("Step 7 of 10 -> Filling holes < 1.3 ha.")
   
   smoothed <- smoothr::fill_holes(
     merged,
-    threshold = units::set_units(10000, "m^2")) |>
+    threshold = units::set_units(13000, "m^2")) |>
     sf::st_set_precision(precision) |>
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
