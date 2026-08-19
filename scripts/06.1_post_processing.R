@@ -13,14 +13,14 @@ library(purrr)
 library(stringr)
 
 # Define the parameters: These are user-defined variables
-model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_eco-3-mt-46d-gpu_2026-08-13_21h59m.rds"
+model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-08-12_eco-3-mt-46d-vsits2_2026-08-13_21h59m.rds"
 version     <- "tcnn-2y-eco-3-mt-46d-mean"
-tiles       <- c('024013','019015','025017','019020','015018','019016','027013','018014','016017','017017','016023')
+tiles       <- c('019017')
 
 # File and folder paths
 seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular"
 class_path  <- "data/class"
-mask_path   <- "data/raw/auxiliary/mascara_geral_amz_v2025_postgis.gpkg"
+mask_path   <- "data/raw/auxiliary/mascara_geral_amz_v2025_postgis_nb.gpkg"
 config_dir  <- ".."
 
 # Brazil Albers Equal Area (EPSG 10857)
@@ -312,6 +312,120 @@ calculate_edge_metrics <- function(class, prodes_mask) {
   return(class)
 }
 
+# Chop polygon
+chop_polygons <- function(pol, class, mask, dist){
+  
+  buf_neg <- st_buffer(
+    pol,
+    dist = dist,
+    joinStyle = "MITRE",
+    mitreLimit = 2
+  )
+  
+  # Remove geometrias vazias ou inválidas que podem surgir
+  buf_neg <- buf_neg[!st_is_empty(buf_neg), ]
+  buf_neg <- st_make_valid(buf_neg) |>
+    st_collection_extract("POLYGON") |>
+    st_cast("POLYGON")
+  # ------------------------------------------------------------
+  # 2. Alocação por distância (crescimento competitivo)
+  # ------------------------------------------------------------
+  # Converter para SpatVector
+  orig_v <- vect(pol)
+  buf_v  <- vect(buf_neg)
+  
+  # Campo único nas sementes
+  buf_v$id_seed <- 1:nrow(buf_v)
+  
+  # Raster vazio cobrindo a extensão original
+  r_template <- rast(class)
+  
+  # Rasterizar as sementes
+  sementes <- rasterize(
+    buf_v,
+    r_template,
+    field = "id_seed",
+    background = NA
+  )
+  
+  seed_cells <- which(!is.na(values(sementes)))
+  
+  # Coordenadas dessas células
+  seed_centroid <- xyFromCell(
+    sementes,
+    seed_cells
+  )
+  
+  # ID correspondente a cada célula-semente
+  seed_ids <- values(sementes)[seed_cells]
+  
+  # Gerar os centroides do raster template
+  xy_pontos <- xyFromCell(
+    r_template,
+    1:ncell(r_template)
+  )
+  
+  # Interpolação Vizinho mais próximo
+  nn <- RANN::nn2(
+    data = seed_centroid,
+    query = xy_pontos,
+    k = 1
+  )
+  # ---------------------------------------------------------
+  # 6. Raster
+  # ---------------------------------------------------------
+  valores <- seed_ids[nn$nn.idx[, 1]]
+  values(r_template) <- valores
+  
+  aloc_final <- mask(r_template, orig_v)
+  
+  # Converter raster para polígonos vetoriais
+  poligonos_alocados <- disagg(as.polygons(aloc_final, aggregate=TRUE))
+  
+  poligonos_alocados$area_ha <- expanse(poligonos_alocados, unit = "ha")
+  
+  grandes  <- poligonos_alocados[poligonos_alocados$area_ha >= 1, ]
+  pequenos <- disagg(
+    aggregate(
+      poligonos_alocados[poligonos_alocados$area_ha <  1, ]
+    )
+  )
+  
+  combinado1 <- combineGeoms(
+    x        = grandes,
+    y        = pequenos,
+    overlap  = FALSE,
+    boundary = TRUE,
+    distance = FALSE,
+    dissolve = TRUE,
+    erase    = TRUE,
+    append   = TRUE       # inclui geometrias de y que não combinarem
+  )
+  
+  combinado <- disagg(combinado1)
+  
+  combinado$area_ha2 <- expanse(combinado, unit = "ha")
+  
+  precision <- units::set_units(1, "mm")
+  
+  combinado <-  combinado |>
+    st_as_sf() |> 
+    st_cast("MULTIPOLYGON") |> 
+    st_cast("POLYGON") |>
+    sf::st_set_precision(precision) |>
+    sf::st_make_valid() |>
+    sf::st_collection_extract("POLYGON")
+  
+  combinado$touches_mask <- lengths(
+    st_intersects(combinado, mask)
+  ) > 0
+  
+  combinado <- combinado |>
+    dplyr::filter(area_ha2 >= 1 | touches_mask == TRUE)
+  
+  return(combinado)
+}
+
 # Assign class by Intersection
 assign_class_by_intersection <- function(supression_polygons, vector_multipolygons) {
   
@@ -396,7 +510,7 @@ process_tile <- function(tile) {
   # ---- Step 1.5 -- define and create the post-classification path ----
   post_class_path <- file.path(class_path, tile, "post_processed", version)
   dir.create(post_class_path, showWarnings = FALSE, recursive = TRUE)
-  
+
   # ----------------------------------------------------------
   # 2. Classification Classes
   # ----------------------------------------------------------
@@ -439,7 +553,7 @@ process_tile <- function(tile) {
     sf::st_make_valid()
   
   
-  rm(raw_class, deforest_class, vector_class)
+  rm(deforest_class, vector_class)
   gc()
   
   # ----------------------------------------------------------
@@ -453,8 +567,6 @@ process_tile <- function(tile) {
     message(" -> The tile ", tile, " is not an edge tile. Intersection ignored.")
     class_biome <- vector_multipolygons
   }
-  
-  # sf::st_write(class_biome, dsn = file.path(post_class_path,paste0("1-class_biome.gpkg")), delete_dsn = TRUE)
 
   # ----------------------------------------------------------
   # Extraction of cloud features
@@ -479,8 +591,6 @@ process_tile <- function(tile) {
     buffer_dist           = 100
   )
   
-  # sf::st_write(sits_classification_cloud_cleaned, dsn = file.path(post_class_path,paste0("2-sits_classification_cloud_cleaned.gpkg")), delete_dsn = TRUE)
-
   rm(result, cloud_vec, class_biome)
   gc()
   
@@ -488,7 +598,7 @@ process_tile <- function(tile) {
   # Remove polygons < 1 hectare
   # ----------------------------------------------------------
   
-  query <- sprintf("SELECT * FROM mascara_geral_amz_v2025 WHERE tile = '%s'", tile)
+  query <- sprintf("SELECT * FROM mascara_geral_amz_v2025_nb WHERE tile = '%s'", tile)
   
   prodes_mask_4674 <- read_sf(mask_path, query = query)   # Save an untouched copy of the mask in 4674 before redesigning
   
@@ -518,8 +628,6 @@ process_tile <- function(tile) {
     sf::st_make_valid()|>
     sf::st_collection_extract("POLYGON")
   
-  # sf::st_write(class_filtered, dsn = file.path(post_class_path,paste0("3-class_filtered.gpkg")), delete_dsn = TRUE)
-  
   rm(sits_classification_cloud_cleaned, prodes_mask_4674)
   gc()
   
@@ -541,8 +649,6 @@ process_tile <- function(tile) {
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  # sf::st_write(merged, dsn = file.path(post_class_path,paste0("4-merged.gpkg")), delete_dsn = TRUE)
-  
   message(" -> Filling holes < 1 ha")
   
   smoothed <- smoothr::fill_holes(
@@ -551,8 +657,6 @@ process_tile <- function(tile) {
     sf::st_set_precision(precision) |>
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
-  
-  # sf::st_write(smoothed, dsn = file.path(post_class_path,paste0("5-smoothed.gpkg")), delete_dsn = TRUE)
   
   rm(class_filtered, merged)
   gc()
@@ -572,8 +676,6 @@ process_tile <- function(tile) {
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  # sf::st_write(class_diff_mask, dsn = file.path(post_class_path,paste0("6-class-diff-mask.gpkg")), delete_dsn = TRUE)
-  
   # # ----------------------------------------------------------
   # # Remove old boundaries polygons
   # # ----------------------------------------------------------
@@ -592,10 +694,20 @@ process_tile <- function(tile) {
     sf::st_set_precision(precision) |>
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
-
-  # sf::st_write(supression_polygons, dsn = file.path(post_class_path,paste0("7-oldboundaryless.gpkg")), delete_dsn = TRUE)
   
   rm(smoothed, class_diff_mask)
+  gc()
+  
+  # ----------------------------------------------------------
+  # Trim polygons size
+  # ----------------------------------------------------------
+  
+  message(" -> Chopping polygons")
+  
+  chopped_polygons <- chop_polygons(supression_polygons, raw_class, mask_union, -51)
+  chopped_polygons <- chop_polygons(chopped_polygons, raw_class, mask_union, -16)
+  
+  rm(supression_polygons, raw_class)
   gc()
   
   # ----------------------------------------------------------
@@ -605,93 +717,94 @@ process_tile <- function(tile) {
   message(" -> Assigning class to each feature by geometric intersection")
   
   sits_classes_intersection <- assign_class_by_intersection(
-    supression_polygons     = supression_polygons,
+    supression_polygons     = chopped_polygons,
     vector_multipolygons    = sf::st_set_precision(vector_multipolygons, precision)
   )
   
-  #sf::st_write(sits_classes_intersection, dsn = file.path(post_class_path,paste0("8-classes-assigned.gpkg")), delete_dsn = TRUE)
-  
-  rm(supression_polygons, vector_multipolygons)
+  rm(chopped_polygons, vector_multipolygons, mask_union)
   gc()
   
   # ----------------------------------------------------------
   # 12. Select Boundaries Segments
   # ----------------------------------------------------------
-  vector_path <- list.files(
-    "data/segments",
-    pattern = paste0("SENTINEL-2_MSI_", tile, "_.*_segments_", seg_version, "(_\\d{4}-\\d{2}-\\d{2})?\\.gpkg$"),
-    full.names = TRUE,
-    recursive = TRUE
-  )
-  
-  if (length(vector_path) == 0) {
-    stop("No segment file found for the tile ", tile)
-  }
-  
-  if (length(vector_path) > 1) {
-    stop(
-      "More than one segment file found for the tile ", tile, ":\n",
-      paste(" -", vector_path, collapse = "\n"),
-      "\nAdjust the search pattern (or remove duplicate files) so that only 1 remains."
-    )
-  }
-  
-  message(" -> Grouping segments with classification polygons")
-  
-  exclude_union <- c(
-    sf::st_geometry(sits_classes_intersection),
-    sf::st_geometry(mask_union)
-  ) |>
-    sf::st_sf() |>
-    sf::st_make_valid(geos_method = "valid_structure") |>
-    sf::st_union(is_coverage = FALSE) |>
-    sf::st_collection_extract("POLYGON") |>
-    sf::st_set_precision(precision) |>
-    sf::st_make_valid() |>
-    sf::st_collection_extract("POLYGON")
-  
-  
-  segments <- read_sf(
-    vector_path,
-    wkt_filter = st_as_text(
-      st_combine(
-        st_transform(sits_classes_intersection,
-                     st_layers(vector_path)$crs[[1]])
-      )
-    )
-  ) |>
-    st_transform(crs_proc) |>
-    st_set_precision(precision) |>
-    sf::st_make_valid() |>
-    st_collection_extract("POLYGON") |>
-    st_difference(exclude_union) |>
-    st_collection_extract("POLYGON") |>
-    dplyr::filter(!st_is_empty(geom)) |>
-    st_set_precision(precision) |>
-    sf::st_make_valid() |>
-    sf::st_collection_extract("POLYGON")
-  
-  rm(exclude_union)
-  gc()
-  
-  # ----------------------------------------------------------
-  # 13. Save final result
-  # ----------------------------------------------------------
-  st_geometry(segments) <- "geom"
-  st_geometry(sits_classes_intersection) <- "geom"
-  
-  merged_polygons <- bind_rows(sits_classes_intersection, segments) |>
-     st_as_sf(sf_column_name = "geom") |>
-     dplyr::select(
-       any_of(c(
-         "fid", 
-         "class"
-       ))
-     )|>
-     sf::st_collection_extract("POLYGON") |>
-     sf::st_cast("POLYGON") |>
-     sf::st_transform(crs_final) 
-  
+  # vector_path <- list.files(
+  #   "data/segments",
+  #   pattern = paste0("SENTINEL-2_MSI_", tile, "_.*_segments_", seg_version, "(_\\d{4}-\\d{2}-\\d{2})?\\.gpkg$"),
+  #   full.names = TRUE,
+  #   recursive = TRUE
+  # )
+  # 
+  # if (length(vector_path) == 0) {
+  #   stop("No segment file found for the tile ", tile)
+  # }
+  # 
+  # if (length(vector_path) > 1) {
+  #   stop(
+  #     "More than one segment file found for the tile ", tile, ":\n",
+  #     paste(" -", vector_path, collapse = "\n"),
+  #     "\nAdjust the search pattern (or remove duplicate files) so that only 1 remains."
+  #   )
+  # }
+  # 
+  # message(" -> Grouping segments with classification polygons")
+  # 
+  # exclude_union <- c(
+  #   sf::st_geometry(sits_classes_intersection),
+  #   sf::st_geometry(mask_union)
+  # ) |>
+  #   sf::st_sf() |>
+  #   sf::st_make_valid(geos_method = "valid_structure") |>
+  #   sf::st_union(is_coverage = FALSE) |>
+  #   sf::st_collection_extract("POLYGON") |>
+  #   sf::st_set_precision(precision) |>
+  #   sf::st_make_valid() |>
+  #   sf::st_collection_extract("POLYGON")
+  # 
+  # message(" -> exclude_union done")
+  # 
+  # segments <- read_sf(
+  #   vector_path,
+  #   wkt_filter = st_as_text(
+  #     st_combine(
+  #       st_transform(sits_classes_intersection,
+  #                    st_layers(vector_path)$crs[[1]])
+  #     )
+  #   )
+  # ) |>
+  #   st_transform(crs_proc) |>
+  #   st_set_precision(precision) |>
+  #   sf::st_make_valid() |>
+  #   st_collection_extract("POLYGON") |>
+  #   st_difference(exclude_union) |>
+  #   st_collection_extract("POLYGON") |>
+  #   dplyr::filter(!st_is_empty(geom)) |>
+  #   st_set_precision(precision) |>
+  #   sf::st_make_valid() |>
+  #   sf::st_collection_extract("POLYGON")
+  # 
+  # message(" -> segments done")
+  # 
+  # rm(exclude_union, mask_union)
+  # gc()
+  # 
+  # # ----------------------------------------------------------
+  # # 13. Save final result
+  # # ----------------------------------------------------------
+  # st_geometry(segments) <- "geom"
+  # st_geometry(sits_classes_intersection) <- "geom"
+  # 
+  # merged_polygons <- bind_rows(sits_classes_intersection, segments) |>
+  #    st_as_sf(sf_column_name = "geom") |>
+  #    dplyr::select(
+  #      any_of(c(
+  #        "fid", 
+  #        "class"
+  #      ))
+  #    )|>
+  #    sf::st_collection_extract("POLYGON") |>
+  #    sf::st_cast("POLYGON") |>
+  #    sf::st_transform(crs_final) 
+  # 
   output_file <- file.path(
     post_class_path,
     paste0("rascunho-sits_t",
@@ -702,11 +815,20 @@ process_tile <- function(tile) {
            ".gpkg")
   )
   
-  sf::st_write(merged_polygons, dsn = output_file, delete_dsn = TRUE)
+  #sf::st_write(merged_polygons, dsn = output_file, delete_dsn = TRUE)
+  sits_classes_intersection |> dplyr::select(
+                                       any_of(
+                                          c("fid",
+                                            "class")
+                                          )
+                                       ) |>
+                                sf::st_write(sits_classes_intersection,
+                                             dsn = output_file,
+                                             delete_dsn = TRUE)
   
   message("Tile ", tile, " successfully processed -> ", output_file)
   
-  rm(sits_classes_intersection, segments, merged_polygons, mask_union)
+  rm(sits_classes_intersection)#, segments, merged_polygons)
   gc()
   
   return(invisible(output_file))
