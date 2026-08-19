@@ -566,7 +566,7 @@ process_tile <- function(tile) {
   vector_multipolygons <- sf::st_as_sf(vector_multipolygons) |>
     sf::st_make_valid()
   
-  rm(raw_class, deforest_class, vector_class)
+  rm(deforest_class, vector_class)
   gc()
   log_step_time("Step 2", t_step)
   
