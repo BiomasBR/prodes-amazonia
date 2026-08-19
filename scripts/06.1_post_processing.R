@@ -11,6 +11,7 @@ library(units)
 library(smoothr)
 library(purrr)
 library(stringr)
+library(RANN)
 
 # Define the parameters: These are user-defined variables
 model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-08-03_eco-3-mt-46d_2026-08-03_16h02m.rds"
