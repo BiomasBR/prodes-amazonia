@@ -13,9 +13,9 @@ library(purrr)
 library(stringr)
 
 # Define the parameters: These are user-defined variables
-model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-08-12_eco-3-mt-46d-vsits2_2026-08-13_21h59m.rds"
+model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-08-03_eco-3-mt-46d_2026-08-03_16h02m.rds"
 version     <- "tcnn-2y-eco-3-mt-46d-mean"
-tiles       <- c('019017')
+tiles       <- c('024013')
 
 # File and folder paths
 seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular"
@@ -266,7 +266,7 @@ remove_cloud_areas <- function(
 }
 
 # Calculate area, perimeter, shared boundaries and equivalent radius
-calculate_edge_metrics <- function(class, prodes_mask) {
+calculate_edge_metrics <- function(class, prodes_mask, crs_planar) {
   
   # Preserves the original state of S2 and ensures restoration upon completion of execution
   s2_state <- sf_use_s2()
@@ -477,17 +477,30 @@ assign_class_by_intersection <- function(supression_polygons, vector_multipolygo
   return(resultado)
 }
 
+# Função auxiliar para calcular e exibir o tempo decorrido
+log_step_time <- function(step_name, start_time) {
+  elapsed <- round(difftime(Sys.time(), start_time, units = "secs"), 2)
+  message("--> [Processing Time ", step_name, "]: ", elapsed, " seconds")
+}
+
 # ============================================================
 # 4. Main function: process ONE tile
 # ============================================================
 
 process_tile <- function(tile) {
   
+  t_total_start <- Sys.time()
+  
   message("\n======================================")
   message("Starting tile post-processing: ", tile)
   message("========================================")
   
-  # ---- Step 1.3 -- defines the path for the classification raster ----
+  # ----------------------------------------------------------
+  # 1. Reading Classification File
+  # ----------------------------------------------------------
+  t_step <- Sys.time()
+  message("Step 1 of 10 -> Reading classification file.")
+  
   raw_class_path <- list.files(
     class_path,
     pattern = paste0(".*_", tile, "_.*_class_", version, "\\.tif$"),
@@ -507,24 +520,25 @@ process_tile <- function(tile) {
     )
   }
   
-  # ---- Step 1.5 -- define and create the post-classification path ----
   post_class_path <- file.path(class_path, tile, "post_processed", version)
   dir.create(post_class_path, showWarnings = FALSE, recursive = TRUE)
-
-  # ----------------------------------------------------------
-  # 2. Classification Classes
-  # ----------------------------------------------------------
+  
   raw_class <- rast(raw_class_path)
   levels(raw_class) <- data.frame(
     ID = seq_along(sits_labels(model)),
     classe = sits_labels(model)
   )
   
-  # salvar projeção da classificação
   crs_proc <- crs(raw_class)
+  log_step_time("Step 1", t_step)
   
-  labels <- c('Clear_Cut', 'Clear_Cut_Herbaceous','Mininig')
+  # ----------------------------------------------------------
+  # 2. Classification Classes and Vectorization
+  # ----------------------------------------------------------
+  t_step <- Sys.time()
+  message("Step 2 of 10 -> Vectorizing deforestation classes.")
   
+  labels <- c('Clear_Cut', 'Clear_Cut_Herbaceous', 'Mininig')
   labels_ids <- match(labels, sits_labels(model))
   
   if (anyNA(labels_ids)) {
@@ -552,62 +566,68 @@ process_tile <- function(tile) {
   vector_multipolygons <- sf::st_as_sf(vector_multipolygons) |>
     sf::st_make_valid()
   
-  
-  rm(deforest_class, vector_class)
+  rm(raw_class, deforest_class, vector_class)
   gc()
+  log_step_time("Step 2", t_step)
   
   # ----------------------------------------------------------
-  # Remove polygons outside the biome border
+  # 3. Remove polygons outside the biome border
   # ----------------------------------------------------------
-  
+  t_step <- Sys.time()
   if (tile %in% edge_tiles) {
-    message(" -> The tile ", tile, " is an edge tile. Running intersection.")
+    message("Step 3 of 10 -> The tile ", tile, " is an edge tile. Running intersection.")
     class_biome <- st_intersection(vector_multipolygons, biome)
   } else {
-    message(" -> The tile ", tile, " is not an edge tile. Intersection ignored.")
+    message("Step 3 of 10 -> The tile ", tile, " is not an edge tile. Intersection ignored.")
     class_biome <- vector_multipolygons
   }
 
   # ----------------------------------------------------------
-  # Extraction of cloud features
+  # 4. Extraction of cloud features
   # ----------------------------------------------------------
+  t_step <- Sys.time()
+  message("Step 4 of 10 -> Analyzing cloud cover.")
+  
   result <- extract_cloud_mask(
     sits_classification_path = raw_class_path,
     sits_reclassification    = class_biome,
-    cloud_values             = c(3, 8, 9, 10),
-    output_dir               = post_class_path
+    cloud_values               = c(3, 8, 9, 10),
+    output_dir                = post_class_path
   )
   
   cloud_vec    <- result$cloud_vec
   end_date_scl <- result$end_date_scl
+  log_step_time("Step 4", t_step)
   
   # ----------------------------------------------------------
-  # Cloud/shadow difference
+  # 5. Cloud/shadow difference
   # ----------------------------------------------------------
+  t_step <- Sys.time()
+  message("Step 5 of 10 -> Removing classification in cloud areas (if exist).")
   
   sits_classification_cloud_cleaned <- remove_cloud_areas(
     sits_reclassification = class_biome,
-    cloud_vec             = cloud_vec,  # NULL se nao houver nuvens
+    cloud_vec             = cloud_vec,
     buffer_dist           = 100
   )
   
   rm(result, cloud_vec, class_biome)
   gc()
+  log_step_time("Step 5", t_step)
   
   # ----------------------------------------------------------
-  # Remove polygons < 1 hectare
+  # 6. Remove polygons < 1 hectare
   # ----------------------------------------------------------
+  t_step <- Sys.time()
+  message("Step 6 of 10 -> Removing polygons < 1 hectare - keeping those that intersect the PRODES cumulative mask.")
   
   query <- sprintf("SELECT * FROM mascara_geral_amz_v2025_nb WHERE tile = '%s'", tile)
   
-  prodes_mask_4674 <- read_sf(mask_path, query = query)   # Save an untouched copy of the mask in 4674 before redesigning
-  
-  mask_union <- sf::st_transform(prodes_mask_4674, crs_proc) |>
+  mask_union <- read_sf(mask_path, query = query) |>
+    sf::st_transform(crs_proc) |>
     sf::st_set_precision(precision) |>
-    sf::st_make_valid()|>
+    sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
-    
-  message(" -> Removing polygons < 1 hectare (keeping those that intersect mask_union)")
   
   sits_classification_cloud_cleaned$area_m2 <- as.numeric(sf::st_area(sits_classification_cloud_cleaned))
   sits_classification_cloud_cleaned$area_ha <- sits_classification_cloud_cleaned$area_m2 / 10000
@@ -616,26 +636,25 @@ process_tile <- function(tile) {
     sf::st_make_valid()|>
     sf::st_collection_extract("POLYGON")
   
-  # Identify which polygons touch or overlap the mask
   sits_classification_cloud_cleaned$touches_mask <- lengths(
     sf::st_intersects(sits_classification_cloud_cleaned, mask_union)
   ) > 0
   
-  # Filter: Area >= 1ha OR touches the mask
   class_filtered <- sits_classification_cloud_cleaned |>
     dplyr::filter(area_ha >= 1 | touches_mask == TRUE)|>
     sf::st_cast("POLYGON") |>
     sf::st_make_valid()|>
     sf::st_collection_extract("POLYGON")
   
-  rm(sits_classification_cloud_cleaned, prodes_mask_4674)
+  rm(sits_classification_cloud_cleaned)
   gc()
+  log_step_time("Step 6", t_step)
   
   # ----------------------------------------------------------
-  # Fill holes < 1 hectare
+  # 7. Fill holes < 1.3 hectare
   # ----------------------------------------------------------
-
-  message(" -> Merging polygons with PRODES mask")
+  t_step <- Sys.time()
+  message("Step 7 of 10 -> Merging polygons with the PRODES cumulative mask.")
   
   merged <- list(class_filtered, mask_union) |>
     purrr::map(\(x) {
@@ -653,7 +672,7 @@ process_tile <- function(tile) {
   
   smoothed <- smoothr::fill_holes(
     merged,
-    threshold = units::set_units(10000, "m^2")) |>
+    threshold = units::set_units(13000, "m^2")) |>
     sf::st_set_precision(precision) |>
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
@@ -661,14 +680,9 @@ process_tile <- function(tile) {
   rm(class_filtered, merged)
   gc()
   
-  # ----------------------------------------------------------
-  # Difference with deforestation mask
-  # ----------------------------------------------------------
+  message("Step 7 of 10 -> Taking off the PRODES cumulative mask.")
   
-  message(" -> Taking off the PRODES mask")
-  
-  class_diff_mask <- sf::st_difference(smoothed,
-                                       mask_union) |>
+  class_diff_mask <- sf::st_difference(smoothed, mask_union) |>
     sf::st_collection_extract("POLYGON") |>
     sf::st_cast("POLYGON") |>
     sf::st_sf()|>
@@ -676,19 +690,22 @@ process_tile <- function(tile) {
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  # # ----------------------------------------------------------
-  # # Remove old boundaries polygons
-  # # ----------------------------------------------------------
+  log_step_time("Step 7", t_step)
   
-  message(" -> Calculating shape metrics")
+  # ----------------------------------------------------------
+  # 8. Remove old boundaries polygons
+  # ----------------------------------------------------------
+  t_step <- Sys.time()
+  message("Step 8 of 10 -> Calculating shape metrics of polygons.")
   
   supression_polygons <- calculate_edge_metrics(
-              class = class_diff_mask,
-              prodes_mask = mask_union
-            )
-            
-  message(" -> Removing old boundaries polygons")
-
+    class = class_diff_mask,
+    prodes_mask = mask_union,
+    crs_planar = crs_proc
+  )
+  
+  message("Step 8 of 10 -> Removing old boundaries polygons.")
+  
   supression_polygons <- supression_polygons |>
     dplyr::filter(!(prop_comp > 0.1 & prop_comp < 0.9 & raio_equivalente < 35)) |>
     sf::st_set_precision(precision) |>
@@ -697,24 +714,26 @@ process_tile <- function(tile) {
   
   rm(smoothed, class_diff_mask)
   gc()
+  log_step_time("Step 8", t_step)
   
   # ----------------------------------------------------------
-  # Trim polygons size
+  # Chopping polygons
   # ----------------------------------------------------------
-  
-  message(" -> Chopping polygons")
+  t_step <- Sys.time()
+  message("Step 9 of 10-> Chopping polygons")
   
   chopped_polygons <- chop_polygons(supression_polygons, raw_class, mask_union, -51)
   chopped_polygons <- chop_polygons(chopped_polygons, raw_class, mask_union, -16)
   
   rm(supression_polygons, raw_class)
   gc()
-  
+  log_step_time("Step 9", t_step)
+
   # ----------------------------------------------------------
-  # Assigns class to each feature by geometric intersection
+  # 10. Assigning class to each feature by geometric intersection
   # ----------------------------------------------------------
-  
-  message(" -> Assigning class to each feature by geometric intersection")
+  t_step <- Sys.time()
+  message("Step 10 of 10 -> Assigning class to each feature by geometric intersection.")
   
   sits_classes_intersection <- assign_class_by_intersection(
     supression_polygons     = chopped_polygons,
@@ -724,111 +743,47 @@ process_tile <- function(tile) {
   rm(chopped_polygons, vector_multipolygons, mask_union)
   gc()
   
+  log_step_time("Step 10", t_step)
+  
   # ----------------------------------------------------------
-  # 12. Select Boundaries Segments
+  # 11. Save final result
   # ----------------------------------------------------------
-  # vector_path <- list.files(
-  #   "data/segments",
-  #   pattern = paste0("SENTINEL-2_MSI_", tile, "_.*_segments_", seg_version, "(_\\d{4}-\\d{2}-\\d{2})?\\.gpkg$"),
-  #   full.names = TRUE,
-  #   recursive = TRUE
-  # )
-  # 
-  # if (length(vector_path) == 0) {
-  #   stop("No segment file found for the tile ", tile)
-  # }
-  # 
-  # if (length(vector_path) > 1) {
-  #   stop(
-  #     "More than one segment file found for the tile ", tile, ":\n",
-  #     paste(" -", vector_path, collapse = "\n"),
-  #     "\nAdjust the search pattern (or remove duplicate files) so that only 1 remains."
-  #   )
-  # }
-  # 
-  # message(" -> Grouping segments with classification polygons")
-  # 
-  # exclude_union <- c(
-  #   sf::st_geometry(sits_classes_intersection),
-  #   sf::st_geometry(mask_union)
-  # ) |>
-  #   sf::st_sf() |>
-  #   sf::st_make_valid(geos_method = "valid_structure") |>
-  #   sf::st_union(is_coverage = FALSE) |>
-  #   sf::st_collection_extract("POLYGON") |>
-  #   sf::st_set_precision(precision) |>
-  #   sf::st_make_valid() |>
-  #   sf::st_collection_extract("POLYGON")
-  # 
-  # message(" -> exclude_union done")
-  # 
-  # segments <- read_sf(
-  #   vector_path,
-  #   wkt_filter = st_as_text(
-  #     st_combine(
-  #       st_transform(sits_classes_intersection,
-  #                    st_layers(vector_path)$crs[[1]])
-  #     )
-  #   )
-  # ) |>
-  #   st_transform(crs_proc) |>
-  #   st_set_precision(precision) |>
-  #   sf::st_make_valid() |>
-  #   st_collection_extract("POLYGON") |>
-  #   st_difference(exclude_union) |>
-  #   st_collection_extract("POLYGON") |>
-  #   dplyr::filter(!st_is_empty(geom)) |>
-  #   st_set_precision(precision) |>
-  #   sf::st_make_valid() |>
-  #   sf::st_collection_extract("POLYGON")
-  # 
-  # message(" -> segments done")
-  # 
-  # rm(exclude_union, mask_union)
-  # gc()
-  # 
-  # # ----------------------------------------------------------
-  # # 13. Save final result
-  # # ----------------------------------------------------------
-  # st_geometry(segments) <- "geom"
-  # st_geometry(sits_classes_intersection) <- "geom"
-  # 
-  # merged_polygons <- bind_rows(sits_classes_intersection, segments) |>
-  #    st_as_sf(sf_column_name = "geom") |>
-  #    dplyr::select(
-  #      any_of(c(
-  #        "fid", 
-  #        "class"
-  #      ))
-  #    )|>
-  #    sf::st_collection_extract("POLYGON") |>
-  #    sf::st_cast("POLYGON") |>
-  #    sf::st_transform(crs_final) 
-  # 
+  t_step <- Sys.time()
+  
+  final <- sits_classes_intersection |>
+    st_as_sf(sf_column_name = "geom") |>
+    dplyr::select(
+      any_of(c(
+        "fid", 
+        "class"
+      ))
+    ) |>
+    dplyr::mutate(
+      class = dplyr::case_match(
+        class,
+        "Clear_Cut" ~ "Corte Raso",
+        "Clear_Cut_Herbaceous" ~ "Desmatamento com Vegetação",
+        "Mininig" ~ "Mineração",
+        .default = class
+      )
+    ) |>
+    sf::st_collection_extract("POLYGON") |>
+    sf::st_cast("POLYGON") |>
+    sf::st_transform(crs_final)
+  
   output_file <- file.path(
     post_class_path,
     paste0("rascunho-sits_t",
            tile, "_",
-           # years, "_",
            end_date_scl, 
-           #"_",version, 
            ".gpkg")
   )
   
-  #sf::st_write(merged_polygons, dsn = output_file, delete_dsn = TRUE)
-  sits_classes_intersection |> dplyr::select(
-                                       any_of(
-                                          c("fid",
-                                            "class")
-                                          )
-                                       ) |>
-                                sf::st_write(sits_classes_intersection,
-                                             dsn = output_file,
-                                             delete_dsn = TRUE)
+  sf::st_write(final, dsn = output_file, delete_dsn = TRUE)
   
   message("Tile ", tile, " successfully processed -> ", output_file)
   
-  rm(sits_classes_intersection)#, segments, merged_polygons)
+  rm(sits_classes_intersection, final)
   gc()
   
   return(invisible(output_file))
@@ -842,23 +797,14 @@ resultados <- vector("list", length(tiles))
 names(resultados) <- tiles
 
 for (tile in tiles) {
-  
   resultados[tile] <- list(
     tryCatch(
       {
-        withCallingHandlers(
-          {
-            process_tile(tile)
-          },
-          warning = function(w) {
-            message("WARNING in tile ", tile, ": ", conditionMessage(w))
-            invokeRestart("muffleWarning")
-          }
-        )
+        process_tile(tile)
       },
       error = function(e) {
         message("ERROR in tile ", tile, ": ", conditionMessage(e))
-        NULL  # marca falha e permite que o loop continue para o proximo tile
+        NULL # marca falha e permite que o loop continue para o proximo tile
       }
     )
   )
