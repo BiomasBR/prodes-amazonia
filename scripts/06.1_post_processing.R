@@ -20,7 +20,7 @@ tiles       <- c('024013')
 # File and folder paths
 seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular"
 class_path  <- "data/class"
-mask_path   <- "data/raw/auxiliary/mascara_geral_amz_v2025_postgis.gpkg"
+mask_path   <- "data/raw/auxiliary/mascara_geral_amz_v2025_postgis_nb.gpkg"
 config_dir  <- ".."
 
 # Brazil Albers Equal Area (EPSG 10857)
@@ -312,6 +312,120 @@ calculate_edge_metrics <- function(class, prodes_mask, crs_planar) {
   return(class)
 }
 
+# Chop polygon
+chop_polygons <- function(pol, class, mask, dist){
+  
+  buf_neg <- st_buffer(
+    pol,
+    dist = dist,
+    joinStyle = "MITRE",
+    mitreLimit = 2
+  )
+  
+  # Remove geometrias vazias ou inválidas que podem surgir
+  buf_neg <- buf_neg[!st_is_empty(buf_neg), ]
+  buf_neg <- st_make_valid(buf_neg) |>
+    st_collection_extract("POLYGON") |>
+    st_cast("POLYGON")
+  # ------------------------------------------------------------
+  # 2. Alocação por distância (crescimento competitivo)
+  # ------------------------------------------------------------
+  # Converter para SpatVector
+  orig_v <- vect(pol)
+  buf_v  <- vect(buf_neg)
+  
+  # Campo único nas sementes
+  buf_v$id_seed <- 1:nrow(buf_v)
+  
+  # Raster vazio cobrindo a extensão original
+  r_template <- rast(class)
+  
+  # Rasterizar as sementes
+  sementes <- rasterize(
+    buf_v,
+    r_template,
+    field = "id_seed",
+    background = NA
+  )
+  
+  seed_cells <- which(!is.na(values(sementes)))
+  
+  # Coordenadas dessas células
+  seed_centroid <- xyFromCell(
+    sementes,
+    seed_cells
+  )
+  
+  # ID correspondente a cada célula-semente
+  seed_ids <- values(sementes)[seed_cells]
+  
+  # Gerar os centroides do raster template
+  xy_pontos <- xyFromCell(
+    r_template,
+    1:ncell(r_template)
+  )
+  
+  # Interpolação Vizinho mais próximo
+  nn <- RANN::nn2(
+    data = seed_centroid,
+    query = xy_pontos,
+    k = 1
+  )
+  # ---------------------------------------------------------
+  # 6. Raster
+  # ---------------------------------------------------------
+  valores <- seed_ids[nn$nn.idx[, 1]]
+  values(r_template) <- valores
+  
+  aloc_final <- mask(r_template, orig_v)
+  
+  # Converter raster para polígonos vetoriais
+  poligonos_alocados <- disagg(as.polygons(aloc_final, aggregate=TRUE))
+  
+  poligonos_alocados$area_ha <- expanse(poligonos_alocados, unit = "ha")
+  
+  grandes  <- poligonos_alocados[poligonos_alocados$area_ha >= 1, ]
+  pequenos <- disagg(
+    aggregate(
+      poligonos_alocados[poligonos_alocados$area_ha <  1, ]
+    )
+  )
+  
+  combinado1 <- combineGeoms(
+    x        = grandes,
+    y        = pequenos,
+    overlap  = FALSE,
+    boundary = TRUE,
+    distance = FALSE,
+    dissolve = TRUE,
+    erase    = TRUE,
+    append   = TRUE       # inclui geometrias de y que não combinarem
+  )
+  
+  combinado <- disagg(combinado1)
+  
+  combinado$area_ha2 <- expanse(combinado, unit = "ha")
+  
+  precision <- units::set_units(1, "mm")
+  
+  combinado <-  combinado |>
+    st_as_sf() |> 
+    st_cast("MULTIPOLYGON") |> 
+    st_cast("POLYGON") |>
+    sf::st_set_precision(precision) |>
+    sf::st_make_valid() |>
+    sf::st_collection_extract("POLYGON")
+  
+  combinado$touches_mask <- lengths(
+    st_intersects(combinado, mask)
+  ) > 0
+  
+  combinado <- combinado |>
+    dplyr::filter(area_ha2 >= 1 | touches_mask == TRUE)
+  
+  return(combinado)
+}
+
 # Assign class by Intersection
 assign_class_by_intersection <- function(supression_polygons, vector_multipolygons) {
   
@@ -467,8 +581,7 @@ process_tile <- function(tile) {
     message("Step 3 of 10 -> The tile ", tile, " is not an edge tile. Intersection ignored.")
     class_biome <- vector_multipolygons
   }
-  log_step_time("Step 3", t_step)
-  
+
   # ----------------------------------------------------------
   # 4. Extraction of cloud features
   # ----------------------------------------------------------
@@ -508,7 +621,7 @@ process_tile <- function(tile) {
   t_step <- Sys.time()
   message("Step 6 of 10 -> Removing polygons < 1 hectare - keeping those that intersect the PRODES cumulative mask.")
   
-  query <- sprintf("SELECT * FROM mascara_geral_amz_v2025 WHERE tile = '%s'", tile)
+  query <- sprintf("SELECT * FROM mascara_geral_amz_v2025_nb WHERE tile = '%s'", tile)
   
   mask_union <- read_sf(mask_path, query = query) |>
     sf::st_transform(crs_proc) |>
@@ -555,7 +668,7 @@ process_tile <- function(tile) {
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  message("Step 7 of 10 -> Filling holes < 1.3 ha.")
+  message(" -> Filling holes < 1 ha")
   
   smoothed <- smoothr::fill_holes(
     merged,
@@ -604,28 +717,31 @@ process_tile <- function(tile) {
   log_step_time("Step 8", t_step)
   
   # ----------------------------------------------------------
-  # 9. Assigns class to each feature by geometric intersection
+  # Chopping polygons
   # ----------------------------------------------------------
   t_step <- Sys.time()
-  message("Step 9 of 10 -> Assigning class to each feature by intersection.")
+  message("Step 9 of 10-> Chopping polygons")
+  
+  chopped_polygons <- chop_polygons(supression_polygons, raw_class, mask_union, -51)
+  chopped_polygons <- chop_polygons(chopped_polygons, raw_class, mask_union, -16)
+  
+  rm(supression_polygons, raw_class)
+  gc()
+  log_step_time("Step 9", t_step)
+
+  # ----------------------------------------------------------
+  # 10. Assigning class to each feature by geometric intersection
+  # ----------------------------------------------------------
+  t_step <- Sys.time()
+  message("Step 10 of 10 -> Assigning class to each feature by geometric intersection.")
   
   sits_classes_intersection <- assign_class_by_intersection(
-    supression_polygons     = supression_polygons,
+    supression_polygons     = chopped_polygons,
     vector_multipolygons    = sf::st_set_precision(vector_multipolygons, precision)
   )
   
-  rm(supression_polygons, vector_multipolygons)
+  rm(chopped_polygons, vector_multipolygons, mask_union)
   gc()
-  log_step_time("Step 9", t_step)
-  
-  # ----------------------------------------------------------
-  # 10. Split polygons by narrow necks
-  # ----------------------------------------------------------
-  t_step <- Sys.time()
-  message("Step 10 of 10 -> Splitting polygons by bottlenecks.")
-  
-  
-  
   
   log_step_time("Step 10", t_step)
   
@@ -664,16 +780,11 @@ process_tile <- function(tile) {
   )
   
   sf::st_write(final, dsn = output_file, delete_dsn = TRUE)
-  log_step_time("Step 11 (Save)", t_step)
   
-  # ----------------------------------------------------------
-  # Final Total Execution Summary
-  # ----------------------------------------------------------
-  total_time <- round(difftime(Sys.time(), t_total_start, units = "mins"), 2)
-  message("\n========================================")
-  message("Tile ", tile, " successfully processed in ", total_time, " minutes.")
-  message("Output file: ", output_file)
-  message("========================================")
+  message("Tile ", tile, " successfully processed -> ", output_file)
+  
+  rm(sits_classes_intersection, final)
+  gc()
   
   return(invisible(output_file))
 }
