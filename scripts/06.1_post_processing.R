@@ -617,7 +617,7 @@ process_tile <- function(tile) {
   log_step_time("Step 5", t_step)
   
   # ----------------------------------------------------------
-  # 6. Remove polygons < 1 hectare
+  # 6. Remove polygons < 1.3 hectare
   # ----------------------------------------------------------
   t_step <- Sys.time()
   message("Step 6 of 10 -> Removing polygons < 1 hectare - keeping those that intersect the PRODES cumulative mask.")
@@ -628,7 +628,10 @@ process_tile <- function(tile) {
     sf::st_transform(crs_proc) |>
     sf::st_set_precision(precision) |>
     sf::st_make_valid() |>
-    sf::st_collection_extract("POLYGON")
+    sf::st_collection_extract("POLYGON") |>
+    sf::st_union() |>
+    sf::st_sf() |>
+    sf::st_make_valid()
   
   sits_classification_cloud_cleaned$area_m2 <- as.numeric(sf::st_area(sits_classification_cloud_cleaned))
   sits_classification_cloud_cleaned$area_ha <- sits_classification_cloud_cleaned$area_m2 / 10000
@@ -669,7 +672,7 @@ process_tile <- function(tile) {
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  message(" -> Filling holes < 1 ha")
+  message(" -> Filling holes < 1.3 ha")
   
   smoothed <- smoothr::fill_holes(
     merged,
