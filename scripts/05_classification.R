@@ -138,6 +138,7 @@ for (tile in tiles) {
       version      = paste(version, label_method, sep = "-"),
       multicores   = n_cores,
       memsize      = 120,
+      max_cells_in_memory = 01e+09,
       progress     = TRUE
     )
     cat("Tile", tile, "finalizada com sucesso!\n")
