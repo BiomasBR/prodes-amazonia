@@ -222,8 +222,8 @@ for (tile in tiles) {
             compactness  = compactness,
             padding      = padding
           ),
-          memsize    = 60,
-          multicores = 14,
+          memsize    = 180,
+          multicores = n_cores,
           output_dir = segments_path,
           version    = version
         )
