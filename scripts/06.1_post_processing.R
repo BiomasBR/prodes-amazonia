@@ -14,9 +14,9 @@ library(stringr)
 library(RANN)
 
 # Define the parameters: These are user-defined variables
-model_name  <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-08-03_eco-3-mt-46d_2026-08-03_16h02m.rds"
-version     <- "tcnn-2y-eco-3-mt-46d-mean"
-tiles       <- c('024013')
+model_name  <- "tcnn-model_2y_2023-08-01_2025-07-28_2026-08-03_eco-3-mt-47d-vsits2_2026-08-18_00h22m.rds"
+version     <- "tcnn-2y-eco-3-mt-47d-vsits2-mean"
+tiles       <- c('020016')
 
 # File and folder paths
 seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular"
@@ -313,7 +313,7 @@ calculate_edge_metrics <- function(class, prodes_mask, crs_planar) {
   return(class)
 }
 
-# Chop polygon
+# Chop polygons
 chop_polygons <- function(pol, class, mask, dist){
   
   buf_neg <- st_buffer(
@@ -323,25 +323,25 @@ chop_polygons <- function(pol, class, mask, dist){
     mitreLimit = 2
   )
   
-  # Remove geometrias vazias ou inválidas que podem surgir
+  # Remove null or invalid geometries that may appear
   buf_neg <- buf_neg[!st_is_empty(buf_neg), ]
   buf_neg <- st_make_valid(buf_neg) |>
     st_collection_extract("POLYGON") |>
     st_cast("POLYGON")
   # ------------------------------------------------------------
-  # 2. Alocação por distância (crescimento competitivo)
+  # 2. Distance-based allocation (competitive growth)
   # ------------------------------------------------------------
-  # Converter para SpatVector
+  # Convert to SpatVector
   orig_v <- vect(pol)
   buf_v  <- vect(buf_neg)
   
-  # Campo único nas sementes
+  # Unique field in the seeds
   buf_v$id_seed <- 1:nrow(buf_v)
   
-  # Raster vazio cobrindo a extensão original
+  # Empty raster covering the original extent
   r_template <- rast(class)
   
-  # Rasterizar as sementes
+  # Rasterize the seeds
   sementes <- rasterize(
     buf_v,
     r_template,
@@ -351,22 +351,22 @@ chop_polygons <- function(pol, class, mask, dist){
   
   seed_cells <- which(!is.na(values(sementes)))
   
-  # Coordenadas dessas células
+  # Coordinates of these cells
   seed_centroid <- xyFromCell(
     sementes,
     seed_cells
   )
   
-  # ID correspondente a cada célula-semente
+  # ID corresponding to each seed cell
   seed_ids <- values(sementes)[seed_cells]
   
-  # Gerar os centroides do raster template
+  # Generate the centroids of the template raster
   xy_pontos <- xyFromCell(
     r_template,
     1:ncell(r_template)
   )
   
-  # Interpolação Vizinho mais próximo
+  # Nearest-neighbor interpolation
   nn <- RANN::nn2(
     data = seed_centroid,
     query = xy_pontos,
@@ -380,36 +380,36 @@ chop_polygons <- function(pol, class, mask, dist){
   
   aloc_final <- mask(r_template, orig_v)
   
-  # Converter raster para polígonos vetoriais
-  poligonos_alocados <- disagg(as.polygons(aloc_final, aggregate=TRUE))
+  # Convert raster to vector polygons
+  allocated_polygons <- disagg(as.polygons(aloc_final, aggregate=TRUE))
   
-  poligonos_alocados$area_ha <- expanse(poligonos_alocados, unit = "ha")
+  allocated_polygons$area_ha <- expanse(allocated_polygons, unit = "ha")
   
-  grandes  <- poligonos_alocados[poligonos_alocados$area_ha >= 1, ]
-  pequenos <- disagg(
+  large  <- allocated_polygons[allocated_polygons$area_ha >= 1, ]
+  small <- disagg(
     aggregate(
-      poligonos_alocados[poligonos_alocados$area_ha <  1, ]
+      allocated_polygons[allocated_polygons$area_ha <  1, ]
     )
   )
   
-  combinado1 <- combineGeoms(
-    x        = grandes,
-    y        = pequenos,
+  combined1 <- combineGeoms(
+    x        = large,
+    y        = small,
     overlap  = FALSE,
     boundary = TRUE,
     distance = FALSE,
     dissolve = TRUE,
     erase    = TRUE,
-    append   = TRUE       # inclui geometrias de y que não combinarem
+    append   = TRUE       # includes geometries of y that do not match
   )
   
-  combinado <- disagg(combinado1)
+  combined <- disagg(combined1)
   
-  combinado$area_ha2 <- expanse(combinado, unit = "ha")
+  combined$area_ha2 <- expanse(combined, unit = "ha")
   
   precision <- units::set_units(1, "mm")
   
-  combinado <-  combinado |>
+  combined <-  combined |>
     st_as_sf() |> 
     st_cast("MULTIPOLYGON") |> 
     st_cast("POLYGON") |>
@@ -417,68 +417,17 @@ chop_polygons <- function(pol, class, mask, dist){
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  combinado$touches_mask <- lengths(
-    st_intersects(combinado, mask)
+  combined$touches_mask <- lengths(
+    st_intersects(combined, mask)
   ) > 0
   
-  combinado <- combinado |>
+  combined <- combined |>
     dplyr::filter(area_ha2 >= 1 | touches_mask == TRUE)
   
-  return(combinado)
+  return(combined)
 }
 
-# Assign class by Intersection
-assign_class_by_intersection <- function(supression_polygons, vector_multipolygons) {
-  
-  s2_state <- sf::sf_use_s2()
-  on.exit(sf::sf_use_s2(s2_state), add = TRUE)
-  sf::sf_use_s2(FALSE)
-  
-  vector_multipolygons_valid <- vector_multipolygons |>
-    sf::st_transform(sf::st_crs(supression_polygons)) |>
-    sf::st_make_valid()
-  
-  supression_polygons <- sf::st_make_valid(supression_polygons) |>
-    dplyr::mutate(.id_pai = dplyr::row_number())
-  
-  # ---- 1. Interseção: uma feição separada por trecho/classe sobreposta ----
-  intersecao <- sf::st_intersection(supression_polygons, vector_multipolygons_valid) |>
-    sf::st_collection_extract("POLYGON") |>
-    sf::st_cast("MULTIPOLYGON")
-  
-  # ---- 2. Classe majoritária por polígono-pai (maior área de interseção) --
-  #    usada só para herdar as sobras -----------------------------------
-  classe_majoritaria <- intersecao |>
-    dplyr::mutate(area_intersec = sf::st_area(intersecao)) |>
-    sf::st_drop_geometry() |>
-    dplyr::group_by(.id_pai) |>
-    dplyr::slice_max(order_by = area_intersec, n = 1, with_ties = FALSE) |>
-    dplyr::select(.id_pai, class_majoritaria = class)
-  
-  # ---- 3. Parte de cada polígono sem nenhuma correspondência de classe ----
-  classes_union <- sf::st_union(vector_multipolygons_valid)
-  
-  sobras <- supression_polygons |>
-    sf::st_difference(classes_union) |>
-    sf::st_collection_extract("POLYGON") |>
-    sf::st_cast("MULTIPOLYGON")
-  
-  sobras <- sobras[!sf::st_is_empty(sf::st_geometry(sobras)), ]
-  
-  # ---- 4. Sobras herdam a classe majoritária do seu polígono-pai ----------
-  #    (se o pai não teve NENHUMA interseção, não há de onde herdar -> NA)
-  sobras <- sobras |>
-    dplyr::left_join(classe_majoritaria, by = ".id_pai") |>
-    dplyr::rename(class = class_majoritaria)
-  
-  resultado <- dplyr::bind_rows(intersecao, sobras) |>
-    dplyr::select(-.id_pai) |>
-    sf::st_make_valid()
-  
-  return(resultado)
-}
-
-# Função auxiliar para calcular e exibir o tempo decorrido
+# Calculate and display the elapsed time
 log_step_time <- function(step_name, start_time) {
   elapsed <- round(difftime(Sys.time(), start_time, units = "secs"), 2)
   message("--> [Processing Time ", step_name, "]: ", elapsed, " seconds")
@@ -582,7 +531,10 @@ process_tile <- function(tile) {
     message("Step 3 of 10 -> The tile ", tile, " is not an edge tile. Intersection ignored.")
     class_biome <- vector_multipolygons
   }
-
+  
+  rm(vector_multipolygons)
+  gc()
+  
   # ----------------------------------------------------------
   # 4. Extraction of cloud features
   # ----------------------------------------------------------
@@ -672,7 +624,7 @@ process_tile <- function(tile) {
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  message(" -> Filling holes < 1.3 ha")
+  message("Step 7 of 10 -> Filling holes < 1.3 ha")
   
   smoothed <- smoothr::fill_holes(
     merged,
@@ -729,48 +681,22 @@ process_tile <- function(tile) {
   chopped_polygons <- chop_polygons(supression_polygons, raw_class, mask_union, -51)
   chopped_polygons <- chop_polygons(chopped_polygons, raw_class, mask_union, -16)
   
-  rm(supression_polygons, raw_class)
-  gc()
   log_step_time("Step 9", t_step)
-
-  # ----------------------------------------------------------
-  # 10. Assigning class to each feature by geometric intersection
-  # ----------------------------------------------------------
-  t_step <- Sys.time()
-  message("Step 10 of 10 -> Assigning class to each feature by geometric intersection.")
   
-  sits_classes_intersection <- assign_class_by_intersection(
-    supression_polygons     = chopped_polygons,
-    vector_multipolygons    = sf::st_set_precision(vector_multipolygons, precision)
-  )
-  
-  rm(chopped_polygons, vector_multipolygons, mask_union)
+  rm(supression_polygons, raw_class, mask_union)
   gc()
   
-  log_step_time("Step 10", t_step)
-  
   # ----------------------------------------------------------
-  # 11. Save final result
+  # 10. Save final result
   # ----------------------------------------------------------
   t_step <- Sys.time()
+  message("Step 10 of 10 -> Saving geopackage file.")
   
-  final <- sits_classes_intersection |>
+  final <- chopped_polygons |>
     st_as_sf(sf_column_name = "geom") |>
     dplyr::select(
       any_of(c(
-        "fid", 
-        "class"
-      ))
-    ) |>
-    dplyr::mutate(
-      class = dplyr::case_match(
-        class,
-        "Clear_Cut" ~ "Corte Raso",
-        "Clear_Cut_Herbaceous" ~ "Desmatamento com Vegetação",
-        "Mininig" ~ "Mineração",
-        .default = class
-      )
-    ) |>
+        "fid"))) |>
     sf::st_collection_extract("POLYGON") |>
     sf::st_cast("POLYGON") |>
     sf::st_transform(crs_final)
@@ -785,9 +711,11 @@ process_tile <- function(tile) {
   
   sf::st_write(final, dsn = output_file, delete_dsn = TRUE)
   
+  log_step_time("Step 10", t_step)
+  
   message("Tile ", tile, " successfully processed -> ", output_file)
   
-  rm(sits_classes_intersection, final)
+  rm(chopped_polygons, final)
   gc()
   
   return(invisible(output_file))
@@ -797,18 +725,18 @@ process_tile <- function(tile) {
 # 5. # Loop over tiles 
 # ============================================================
 
-resultados <- vector("list", length(tiles))
-names(resultados) <- tiles
+results <- vector("list", length(tiles))
+names(results) <- tiles
 
 for (tile in tiles) {
-  resultados[tile] <- list(
+  results[tile] <- list(
     tryCatch(
       {
         process_tile(tile)
       },
       error = function(e) {
         message("ERROR in tile ", tile, ": ", conditionMessage(e))
-        NULL # marca falha e permite que o loop continue para o proximo tile
+        NULL
       }
     )
   )
@@ -818,14 +746,14 @@ for (tile in tiles) {
 # 6. Final summary
 # ============================================================
 
-sucesso <- names(resultados)[!vapply(resultados, is.null, logical(1))]
-falha   <- names(resultados)[vapply(resultados, is.null, logical(1))]
+success <- names(results)[!vapply(results, is.null, logical(1))]
+failure   <- names(results)[vapply(results, is.null, logical(1))]
 
 message("\n========== PROCESSING SUMMARY ==========")
 message("Total tiles: ", length(tiles))
-message("Success (", length(sucesso), "): ", paste(sucesso, collapse = ", "))
-if (length(falha) > 0) {
-  message("Failure (", length(falha), "): ", paste(falha, collapse = ", "))
+message("Success (", length(success), "): ", paste(success, collapse = ", "))
+if (length(failure) > 0) {
+  message("Failure (", length(failure), "): ", paste(failure, collapse = ", "))
 } else {
   message("No faults recorded.")
 }
