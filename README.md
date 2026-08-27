@@ -1,10 +1,14 @@
-PRODES-AMZ experiments and pipelines developed using the SITS package
+Prodes-Amazônia experiments and pipelines developed using the SITS package
 ================
-
+<p align="center">
+  <img src="https://img.shields.io/badge/License-GPLv3-blue" />
+  <img src="https://img.shields.io/badge/Lifecycle-maturing-green.svg" />
+  <img src="https://img.shields.io/badge/sits-2.0.0-276DC3?logo=r&logoColor=white" />
+</p>
 <img src="./inst/extdata/sticker/logo-biomas-br.png" alt="RESTORE+ icon" align="right" height="150" width="150"/>
 
 This repository brings together reproducible experiments and processing pipelines
-from the PRODES-AMZ project, developed using the SITS package. Its purpose
+from the Prodes-Amazônia project, developed using the SITS package. Its purpose
 is to clearly and systematically document the adopted workflows,
 providing references for experimentation, validation, and methodological
 improvements, while supporting reproducibility and the continuous
