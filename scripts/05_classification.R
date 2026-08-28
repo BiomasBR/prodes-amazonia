@@ -10,10 +10,12 @@ library(terra)
 library(RColorBrewer)
 
 # Define the parameters: These are user-defined variables
-tiles           <- c('012014', '012015', '013014', '013015')
-model_name      <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-08-03_eco-3-mt-46d_2026-08-03_16h02m.rds"
+tiles           <- c('016016','018016')
+model_name      <- "tcnn-model_2y_2023-08-01_2025-07-28_2026-08-03_eco-3-mt-47d-vsits2_2026-08-18_00h22m.rds"
 seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular" #SITS recognizes the underscore (_) character as a separator.
 label_method    <- "mean"
+
+
 
 # Extract the date of the string separated by "_"
 start_date     <- "2024-08-01"

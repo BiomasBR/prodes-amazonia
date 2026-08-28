@@ -8,9 +8,15 @@ library(sf, lib.loc = "/opt/r/R/x86_64-pc-linux-gnu-library/4.4")
 library(lubridate)
 
 # Define the parameters: These are user-defined variables
-tiles           <- c('012014', '012015', '013014', '013015')
-start_date      <- '2026-06-26'
-end_date        <- '2026-07-12'
+tiles           <- c('024016',
+                     '016016',
+                     '026012',
+                     '017021',
+                     '020017',
+                     '018016',
+                     '012019')
+start_date      <- '2026-07-12'
+end_date        <- '2026-07-28'
 n_cores         <- 28                               
 
 sits_parallel(workers = n_cores)
