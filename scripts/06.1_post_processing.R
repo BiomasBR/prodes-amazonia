@@ -702,12 +702,11 @@ process_tile <- function(tile) {
   
   output_file <- file.path(
     post_class_path,
-    paste0("rascunho-sits_t",
-           tile, "_",
-           end_date_scl, 
+    paste0("rascunho_sits_t",
+           tile,
            ".gpkg")
   )
-  
+            
   sf::st_write(final, dsn = output_file, delete_dsn = TRUE)
   
   log_step_time("Step 10", t_step)
