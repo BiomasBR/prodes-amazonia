@@ -77,7 +77,7 @@
 
     html {
       scroll-behavior: smooth;
-      font-size: 18px
+      font-size: 20px
     }
 
     body {
@@ -315,7 +315,7 @@
 
     .search-result {
       display: flex;
-      align-items: baseline;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
       padding: .6rem .75rem;
@@ -324,10 +324,28 @@
       color: var(--text)
     }
 
+    .search-result-main {
+      display: flex;
+      flex-direction: column;
+      gap: .15rem;
+      min-width: 0
+    }
+
     .search-result-title {
       font-family: var(--sans);
       font-size: .92rem;
       font-weight: 500
+    }
+
+    .search-result-snippet {
+      font-family: var(--sans);
+      font-size: .78rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden
     }
 
     .search-result-page {
@@ -335,7 +353,8 @@
       font-size: .72rem;
       color: var(--text-faint);
       white-space: nowrap;
-      flex-shrink: 0
+      flex-shrink: 0;
+      padding-top: .1rem
     }
 
     .search-result:hover,
@@ -350,6 +369,21 @@
       font-family: var(--sans);
       font-size: .85rem;
       color: var(--text-faint)
+    }
+
+    /* ── In-page highlight for a term reached via search ── */
+    mark.search-highlight {
+      background: rgba(30, 107, 60, .12);
+      color: #1a5c32;
+      border-radius: .2em;
+      padding: .05em .15em;
+      box-shadow: 0 0 0 1px rgba(30, 107, 60, .25);
+    }
+
+    [data-theme="dark"] mark.search-highlight {
+      background: rgba(88, 166, 255, .16);
+      color: var(--link);
+      box-shadow: 0 0 0 1px rgba(88, 166, 255, .35);
     }
 
     .nb-link {
@@ -512,7 +546,7 @@
 
     .sb-part {
       font-family: var(--sans);
-      font-size: .74rem;
+      font-size: .72rem;
       font-weight: 800;
       letter-spacing: .1em;
       text-transform: uppercase;
@@ -529,7 +563,7 @@
       align-items: baseline;
       gap: .55rem;
       font-family: var(--sans);
-      font-size: .95rem;
+      font-size: .88rem;
       color: var(--text-muted);
       padding: .4rem 1.1rem;
       cursor: pointer;
@@ -584,12 +618,12 @@
     .sb-subitem {
       display: block;
       font-family: var(--sans);
-      font-size: .78rem;
+      font-size: .8rem;
       color: var(--text-faint);
       padding: .22rem 1.1rem .22rem 2.8rem;
       text-decoration: none;
       border-right: 2px solid transparent;
-      line-height: 1.4;
+      line-height: 1.45;
       transition: background .1s, color .1s;
     }
 
@@ -628,7 +662,7 @@
     .sb-subitem {
       display: block;
       font-family: var(--sans);
-      font-size: .88rem;
+      font-size: .8rem;
       color: var(--text-faint);
       padding: .28rem 1.1rem .28rem 2.9rem;
       text-decoration: none;
@@ -708,7 +742,7 @@
 
     .toc-label {
       font-family: var(--sans);
-      font-size: .68rem;
+      font-size: .72rem;
       font-weight: 800;
       letter-spacing: .1em;
       text-transform: uppercase;
@@ -719,7 +753,7 @@
     .toc-link {
       display: block;
       font-family: var(--sans);
-      font-size: .8rem;
+      font-size: .88rem;
       color: var(--text-muted);
       padding: .3rem 1rem .3rem 1.2rem;
       border-left: 2px solid transparent;
@@ -741,7 +775,7 @@
 
     .toc-sub {
       padding-left: 2rem;
-      font-size: .76rem
+      font-size: .8rem
     }
 
     /* ── Page header ── */
@@ -1871,259 +1905,6 @@
   <div class="layout">
     <!-- ── Sidebar ── -->
     <aside class="sidebar">
-      <div class="sb-part sb-part-first">Overview</div>
-      <a href="index.html#preface" class="sb-item active">Preface</a>
-      <a href="index.html#introduction" class="sb-item">Introduction</a>
-      <a href="index.html#setup" class="sb-item">Setup</a>
-      <hr class="sb-divider">
-      <div class="sb-part">Pipeline</div>
-      <a href="stage_1.html" class="sb-item"><span class="sb-item-num">1</span>Linear Spectral Mixture Model</a>
-      <a href="stage_2.html" class="sb-item"><span class="sb-item-num">2</span>Image Segmentation</a>
-      <a href="stage_3.html" class="sb-item sb-has-sub"><span class="sb-item-num">3</span>Time Series Sampling<span
-          class="sb-chevron">›</span></a>
-      <div class="sb-submenu">
-        <a href="stage_3.html#sampling" class="sb-subitem">3.1 Sampling Protocol</a>
-        <a href="stage_3.html#time_series" class="sb-subitem">3.2 Time Series Extraction</a>
-        <!--<a href="stage_3.html#som"         class="sb-subitem">3.3 Samples Quality Assessment</a>-->
-      </div>
-      <a href="stage_4.html" class="sb-item sb-has-sub"><span class="sb-item-num">4</span>Model Training<span
-          class="sb-chevron">›</span></a>
-      <div class="sb-submenu">
-        <a href="stage_4.html#machine" class="sb-subitem">4.1 Machine Learning</a>
-        <a href="stage_4.html#deep" class="sb-subitem">4.2 Deep Learning</a>
-      </div>
-      <a href="stage_5.html" class="sb-item sb-has-sub"><span class="sb-item-num">5</span>Classification<span
-          class="sb-chevron">›</span></a>
-      <div class="sb-submenu">
-        <a href="stage_5.html#label-classify" class="sb-subitem">5.1 Labelled Map</a>
-        <a href="stage_5.html#uncertainty" class="sb-subitem">5.2 Uncertainty</a>
-      </div>
-      <a href="stage_6.html" class="sb-item sb-has-sub"><span class="sb-item-num">6</span>Map Accuracy<span
-          class="sb-chevron">›</span></a>
-      <div class="sb-submenu">
-        <a href="stage_6.html#validation" class="sb-subitem">6.1 Validation Samples</a>
-        <a href="stage_6.html#accuracy" class="sb-subitem">6.2 Accuracy Measurement</a>
-      </div>
-      <hr class="sb-divider">
-      <div class="sb-part">External</div>
-      <a href="https://github.com/BiomasBR/prodes-amazonia" class="sb-item" target="_blank">Repository</a>
-      <a href="https://github.com/e-sensing/sits" class="sb-item" target="_blank">SITS API</a>
-    </aside>
-
-    <main class="main">
-      <div class="content">
-
-        <!-- ═══ PREFACE ══════════════════════════════════════════════════════════ -->
-        <section id="preface">
-          <div class="page-header">
-            <h1 class="page-title">SITS-AMZ Pipeline</h1>
-            <p class="page-subtitle">End-to-end deforestation and degradation mapping for the Brazilian Legal Amazon</p>
-          </div>
-
-          <p>
-            This guide documents the complete processing pipeline of the <strong>Prodes-AMZ</strong> project, an
-            application of the <a href="https://github.com/e-sensing/sits" target="_blank"><code>sits</code></a> R
-            package for annual deforestation and forest degradation monitoring in the Brazilian Legal Amazon.
-            The pipeline processes Sentinel-2 16-day composites from the <a href="https://data.inpe.br/bdc/"
-              target="_blank">Brazil Data Cube (BDC)</a>, covering neighboring tiles: <code>012014</code>,
-            <code>012015</code>, <code>013014</code>, and <code>013015</code> for the 2024-08 to 2025-07 reference
-            period.
-          </p>
-
-          <p>
-            The pipeline follows a <strong>time-first, space-later</strong> paradigm: each spatial unit is associated
-            with a multivariate time series of spectral bands,
-            a machine learning model classifies those time series, and spatial post-processing rules produce
-            Prodes-compatible polygon outputs.
-            Classification is performed at <strong>segment level</strong> (Object-Based Image Analysis) using vector
-            data cubes.</p>
-
-          <h2 id="agradecimentos"></span>Acknowledgements</h2>
-          <p>
-            The authors are Cassiano Messias, Guilherme Correa, Gustavo Salgado, Igor Cunha, and Miguel Cunha.
-            We extend our sincere gratitude to the Brazil Data Cube team, with special thanks to Gilberto Câmara for his
-            invaluable contributions and support.
-            This work was supported by the National Council for Scientific and Technological Development (CNPq)
-            in partnership with the National Institute for Space Research (INPE).
-          <p>
-
-          <div class="callout note">
-            <div class="callout-title">📖 Note</div>
-            <p>All scripts are available at <a href="https://github.com/migualex/sits-prodes"
-                target="_blank">github.com/migualex/sits-prodes</a>. For theoretical background, refer to the <a
-                href="https://e-sensing.github.io/sitsbook/" target="_blank">SITS Book</a> (Simoes et al., 2021).</p>
-          </div>
-
-          <h2 id="pipeline-overview"><span class="sec-num">0.1</span>Pipeline Overview</h2>
-          <div class="tbl-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Script</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="mono">01</td>
-                  <td><code>1_mixture_model.R</code></td>
-                  <td>Generate Linear Spectral Mixture Model fraction bands</td>
-                </tr>
-                <tr>
-                  <td class="mono">02</td>
-                  <td><code>2_1_segmentation.R</code></td>
-                  <td>SNIC-based segmentation</td>
-                </tr>
-                <tr>
-                  <td class="mono">03</td>
-                  <td><code>3_1_time_series_sampling.R</code></td>
-                  <td>Extract training time series</td>
-                </tr>
-                <tr>
-                  <td class="mono">04</td>
-                  <td><code>3_2_samples_quality_assessment.R</code></td>
-                  <td>SOM quality assessment</td>
-                </tr>
-                <tr>
-                  <td class="mono">05</td>
-                  <td><code>4_1_model_training_random-forest.R</code></td>
-                  <td>Random Forest training</td>
-                </tr>
-                <tr>
-                  <td class="mono">06</td>
-                  <td><code>4_2_model_training_xgboost.R</code></td>
-                  <td>XGBoost training</td>
-                </tr>
-                <tr>
-                  <td class="mono">07</td>
-                  <td><code>4_3_model_training_tempcnn.R</code></td>
-                  <td>TempCNN training</td>
-                </tr>
-                <tr>
-                  <td class="mono">08</td>
-                  <td><code>4_4_model_training_ltae.R</code></td>
-                  <td>LTAE training</td>
-                </tr>
-                <tr>
-                  <td class="mono">09</td>
-                  <td><code>5_classification.R</code></td>
-                  <td>Classify vector data cube</td>
-                </tr>
-                <tr>
-                  <td class="mono">10</td>
-                  <td><code>6_1_validation_samples_stratification.R</code></td>
-                  <td>Stratified sample design for Forest</td>
-                </tr>
-                <!--<tr><td class="mono">11</td><td><code>6_2_validation_samples_stratification_non-forest.R</code></td><td>Stratified sample design for Non-Forest</td></tr>-->
-                <tr>
-                  <td class="mono">12</td>
-                  <td><code>7_1_validation_accuracy_measurement.R</code></td>
-                  <td>Validation accuracy measurement for Forest</td>
-                </tr>
-                <!--<tr><td class="mono">13</td><td><code>7_2_validation_accuracy_measurement_non-forest.R</code></td><td>Validation accuracy measurement for Non-Forest</td></tr>-->
-                <tr>
-                  <td class="mono">14</td>
-                  <td><code>8_1_post_processing.R</code></td>
-                  <td>Post-processing for Forest</td>
-                </tr>
-                <!--<tr><td class="mono">15</td><td><code>8_2_post_processing_non-forest.R</code></td><td>Post-processing for Non-Forest</td></tr> -->
-              </tbody>
-            </table>
-          </div>
-
-          <div class="page-nav">
-            <span></span>
-            <a class="pnav-btn pnav-next" href="#introduction"><span class="pnav-dir">Next →</span><span
-                class="pnav-title">Introduction</span></a>
-          </div>
-        </section>
-
-        <!-- ═══ INTRODUCTION ════════════════════════════════════════════════════ -->
-        <section id="introduction" class="section">
-          <div class="page-header">
-            <div class="page-eyebrow">Chapter 1</div>
-            <h1 class="page-title">Introduction</h1>
-            <p class="page-subtitle">Context, paradigm, and key concepts</p>
-          </div>
-
-          <h2 id="prodes"><span class="sec-num">1.1</span>Prodes and BiomasBR</h2>
-          <!--<p>The <strong>Prodes program</strong>, operated by BiomasBR project at INPE, has continuously monitored deforestation in the Brazilian Legal Amazon since 1988. Prodes tracks gross annual deforestation, 
-    defined as primary forest removed within each August-to-July reference year, firstly using Landsat-8 imagery and then substituido por Sentinel-2 and polygon-based shapefiles with a 1 ha minimum mapping unit. 
-    This pipeline extends Prodes-compatible mapping to include <strong>forest degradation</strong> classes (<code>Degradation</code>, <code>Fire Degradation</code>) alongside the standard deforestation classes, 
-    using Sentinel-2 time series and object-based classification.</p>-->
-          <p>The <strong>Prodes Project</strong>, operated by the BiomasBR project at INPE, has continuously monitored
-            deforestation in the Brazilian Legal Amazon since 1988.
-            Prodes tracks gross annual deforestation, defined as the removal of primary forest within each reference
-            year (from August to July).
-            Previously, the methodology was based on Landsat-8 imagery, with a spatial resolution of 30 meters <a
-              href="#ref2" id="cite2">[2]</a>.
-            It has now transitioned to Sentinel-2 data, with a 10-meter spatial resolution, enabling more detailed and
-            accurate mapping.
-            In addition, Prodes uses polygon-based shapefiles with a minimum mapping unit of 1 hectare.
-            This processing pipeline has been expanded to include <strong>forest degradation</strong> classes
-            (<code>Degradation</code> and <code>Fire Degradation</code>),
-            alongside the standard deforestation classes, using Sentinel-2 time series and object-based classification.
-          </p>
-
-          <h2 id="time-first"><span class="sec-num">1.2</span>Time-First, Space-Later</h2>
-          <p>The <code>sits</code> package implements the <strong>time-first, space-later</strong> paradigm <a
-              href="#ref1" id="cite1">[1]</a>.
-            In the <em>time-first</em> phase, each pixel or segment is represented as a multivariate time series across
-            all acquisition dates.
-            A machine or deep learning model then classifies these time series. In the <em>space-later</em> phase,
-            spatial post-processing rules refine the map.
-            This approach captures seasonal phenological signals, such as the NDVI cycle of pasture versus native
-            vegetation, that single-date composites cannot discriminate.</p>
-
-          <h2 id="obia-concept"><span class="sec-num">1.3</span>Object-Based Classification with Vector Data Cubes</h2>
-          <p>Rather than classifying individual pixels, this pipeline segments the image into spatially homogeneous
-            objects (SNIC superpixels),
-            assembles them into a <strong>vector data cube</strong> (SITS Book, Ch. 25), and classifies the time series
-            extracted per segment.
-            This eliminates salt-and-pepper noise, produces polygon outputs compatible with the PRODES data model,
-            and allows enforcing the minimum mapping unit before classification by controlling segment size.</p>
-
-          <h2 id="bdc-source"><span class="sec-num">1.4</span>Brazil Data Cube as Data Source</h2>
-          <p>All imagery is sourced from the BDC collection <code>SENTINEL-2-16D</code>,
-            which provides analysis-ready 16-day best-pixel composites at 10 m resolution. The BDC applies cloud masking
-            and compositing,
-            making the cubes directly suitable for time series analysis without additional preprocessing.
-            Bands used: B02, B03, B04, B05, B06, B07, B08, B8A, B11, B12, NDVI, NBR, EVI, CLOUD.</p>
-
-          <div class="page-nav">
-            <a class="pnav-btn" href="#preface"><span class="pnav-dir">← Previous</span><span
-                class="pnav-title">Preface</span></a>
-            <a class="pnav-btn pnav-next" href="#setup"><span class="pnav-dir">Next →</span><span
-                class="pnav-title">Setup</span></a>
-          </div>
-        </section>
-
-        <!-- ═══ SETUP ════════════════════════════════════════════════════════════ -->
-        <section id="setup" class="section">
-          <div class="page-header">
-            <div class="page-eyebrow">Chapter 2</div>
-            <h1 class="page-title">Setup</h1>
-            <p class="page-subtitle">Installation, dependencies, and project structure</p>
-          </div>
-
-          <h2 id="installation"><span class="sec-num">2.1</span>Installation</h2>
-          <div class="code-block">
-            <div class="code-header">
-              <div class="code-dots">
-                <div class="cd cd-r"></div>
-                <div class="cd cd-y"></div>
-                <div class="cd cd-g"></div>
-              </div>
-              <span class="code-fname">R</span>
-            </div>
-            <pre
-              class="code-pre"><span class="c"># Install sits from CRAN (stable release)</span>
-install.packages(<span class="s">&quot;sits&quot;</span>)  <span class="c"># requires sits &gt;= 1.5.1</span>
-
-  <div class="layout">
-    <!-- ── Sidebar ── -->
-    <aside class="sidebar">
       <div class="sb-part sb-part-first">Home</div>
       <a href="index.html#preface" class="sb-item active">Preface</a>
       <a href="index.html#introduction" class="sb-item">Introduction</a>
@@ -2455,155 +2236,136 @@ install.packages(<span class="s">&quot;sits&quot;</span>)  <span class="c"># req
                 class="code-pre"><span class="c"># Install sits (development version)</span>
 devtools::install_github(&quot;e-sensing/sits&quot;, dependencies = TRUE)</span>
 
-<span class="c"># Install all supporting packages used in this pipeline</span>
-install.packages(<span class="kc">c</span>(
-  <span class="s">&quot;sf&quot;</span>, <span class="s">&quot;terra&quot;</span>, <span class="s">&quot;dplyr&quot;</span>, <span class="s">&quot;tibble&quot;</span>, <span class="s">&quot;ggplot2&quot;</span>, <span class="s">&quot;lubridate&quot;</span>,
-  <span class="s">&quot;purrr&quot;</span>, <span class="s">&quot;stringr&quot;</span>, <span class="s">&quot;fs&quot;</span>, <span class="s">&quot;RColorBrewer&quot;</span>, <span class="s">&quot;gdalUtilities&quot;</span>,
-  <span class="s">&quot;pals&quot;</span>, <span class="s">&quot;cli&quot;</span>, <span class="s">&quot;units&quot;</span>, <span class="s">&quot;smoothr&quot;</span>, <span class="s">&quot;torch&quot;</span>, <span class="s">&quot;luz&quot;</span>))</pre>
-          </div>
-
-          <div class="callout important">
-            <div class="callout-title">⚠ Pre-settings</div>
-            <p>ALWAYS set a seed in script. We decided to use ‘SETSEED = 88’, in reference to the year 1988, the first
-              year of PRODES mapping.</p>
-            <!--All cubes are sourced from the <strong>Brazil Data Cube</strong> (<code>source = "BDC"</code>). A free access token is required. 
-      Register at <a href="https://data.inpe.br/bdc/" target="_blank">BDC</a> and configure with <code>sits_config(bdc_access_key = "...")</code>.</p>-->
-          </div>
-
-          <h2 id="libraries"><span class="sec-num">2.2</span>Libraries</h2>
-          <p>Every R package used across all scripts, with a brief description of its role in the pipeline.</p>
-
-          <table class="lib-table">
-            <thead>
-              <tr>
-                <th>Package</th>
-                <th>Description</th>
-                <th>Used in</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>sits</td>
-                <td>Provides all SITS functions: data cube creation, Linear Spectral Mixture Model, segmentation, SOM
-                  quality control, ML training, classification, uncertainty estimation, and accuracy assessment.</td>
-                <td>All scripts</td>
-              </tr>
-              <tr>
-                <td>sf</td>
-                <td>Standard R interface for vector spatial data. Used for reading/writing GeoPackage files, geometric
-                  operations (union, difference, buffer, area calculation), and CRS management.</td>
-                <td>2.1, 6.1, 6.2, 7.2, 8.2</td>
-              </tr>
-              <tr>
-                <td>terra</td>
-                <td>Raster data processing. Used to rasterize classified segment vectors, compute entropy rasters from
-                  vector uncertainty outputs, and write compressed GeoTIFF files.</td>
-                <td>5, 6.1, 6.2, 7.2, 8.2</td>
-              </tr>
-              <tr>
-                <td>dplyr</td>
-                <td>Data manipulation. Provides filter, mutate, group_by, summarise, bind_rows, and pipe-based workflows
-                  for sample tables and spatial data frames.</td>
-                <td>3.1, 3.2, 6.1, 6.2, 7.2, 8.2</td>
-              </tr>
-              <tr>
-                <td>tibble</td>
-                <td>Modern data frame format required by sits for training sample objects. Also used to construct the
-                  endmember specification table in Script 1.</td>
-                <td>1, 3.1, 3.2, 6.1, 6.2</td>
-              </tr>
-              <tr>
-                <td>ggplot2</td>
-                <td>Plotting. Generates SOM evaluation charts, confusion matrices, per-class accuracy heatmaps,
-                  error-adjusted area bar charts, and OOB error curves.</td>
-                <td>3.1, 3.2, 4.1, 4.2, 4.4, 7.2</td>
-              </tr>
-              <tr>
-                <td>lubridate</td>
-                <td>Date arithmetic. Computes the number of years between start_date and end_date used to generate
-                  version strings in output filenames.</td>
-                <td>2.1, 3.1, 3.2, 4.1, 4.2, 5</td>
-              </tr>
-              <tr>
-                <td>purrr</td>
-                <td>Functional iteration over lists and vectors. Used to map rasterization and reclassification
-                  functions across multiple tiles and cube directories.</td>
-                <td>6.1, 6.2, 7.2, 8.2</td>
-              </tr>
-              <tr>
-                <td>stringr</td>
-                <td>String manipulation. Extracts tile IDs and period codes from version strings to automatically locate
-                  the correct cube directories.</td>
-                <td>6.1, 6.2, 7.2</td>
-              </tr>
-              <tr>
-                <td>fs</td>
-                <td>File system operations. Creates directories, expands paths, and manages temporary files during
-                  rasterization workflows.</td>
-                <td>6.1, 6.2</td>
-              </tr>
-              <tr>
-                <td>RColorBrewer</td>
-                <td>Color palettes for uncertainty maps and for the class style tables written as QGIS-compatible QML
-                  files alongside rasterized outputs.</td>
-                <td>5, 6.1, 6.2</td>
-              </tr>
-              <tr>
-                <td>gdalUtilities</td>
-                <td>Wraps GDAL's gdal_rasterize to convert classified segment vector maps to integer-coded GeoTIFF
-                  rasters that sits_cube() can read for accuracy assessment.</td>
-                <td>6.1, 6.2</td>
-              </tr>
-              <tr>
-                <td>pals</td>
-                <td>Extended color palettes. Provides cols25() for assigning visually distinct colors to 13+ land cover
-                  classes in the rasterized output style file.</td>
-                <td>6.1, 6.2</td>
-              </tr>
-              <tr>
-                <td>cli</td>
-                <td>Command-line interface messages. Reports per-tile progress during rasterization and reclassification
-                  loops with formatted, colored status output.</td>
-                <td>6.1, 6.2, 7.2</td>
-              </tr>
-              <tr>
-                <td>units</td>
-                <td>Physical unit handling for spatial thresholds. Used to specify area filters in square metres as
-                  typed quantities for smoothr::fill_holes().</td>
-                <td>8.2</td>
-              </tr>
-              <tr>
-                <td>smoothr</td>
-                <td>Polygon smoothing and hole filling. fill_holes() removes internal holes below a given area threshold
-                  from classified suppression polygons after cloud removal.</td>
-                <td>8.2</td>
-              </tr>
-              <tr>
-                <td>torch</td>
-                <td>Deep learning backend for R. Required by sits_lighttae() for LTAE model training. Provides GPU
-                  acceleration via CUDA when available.</td>
-                <td>4.4</td>
-              </tr>
-              <tr>
-                <td>luz</td>
-                <td>High-level training loop for torch. Manages epochs, callbacks, and learning rate schedulers used
-                  internally by the LTAE training routine.</td>
-                <td>4.4</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h2 id="project-structure"><span class="sec-num">2.3</span>Project Structure</h2>
-          <div class="code-block">
-            <div class="code-header">
-              <div class="code-dots">
-                <div class="cd cd-r"></div>
-                <div class="cd cd-y"></div>
-                <div class="cd cd-g"></div>
-              </div>
-              <span class="code-fname">bash</span>
+<span class="c"># Install all supporting packages used in the first version</span>
+install.packages(<span class="kc">c</span>(<span class="s">&quot;sf&quot;</span>,<span class="s">&quot;terra&quot;</span>,<span class="s">&quot;dplyr&quot;</span>,<span class="s">&quot;tibble&quot;</span>,<span class="s">&quot;ggplot2&quot;</span>,
+<span class="s">&quot;purrr&quot;</span>,<span class="s">&quot;stringr&quot;</span>,<span class="s">&quot;lubridate&quot;</span>,<!--<span class="s">&quot;randomForestExplainer&quot;</span>--><span class="s">&quot;torch&quot;</span>,<span class="s">&quot;luz&quot;</span>,<span class="s">&quot;RColorBrewer&quot;</span>,<span class="s">&quot;units&quot;</span>,<span class="s">&quot;smoothr&quot;</span>))</pre>
             </div>
-            <pre class="code-pre">prodes.amz/
+
+            <div class="callout important">
+              <div class="callout-title">⚠ Pre-settings</div>
+              <p>ALWAYS set a seed in script. We decided to use ‘SETSEED = 88’, in reference to the year 1988, the first
+                year of PRODES mapping.</p>
+              <!--All cubes are sourced from the <strong>Brazil Data Cube</strong> (<code>source = "BDC"</code>). A free access token is required. 
+      Register at <a href="https://data.inpe.br/bdc/" target="_blank">BDC</a> and configure with <code>sits_config(bdc_access_key = "...")</code>.</p>-->
+            </div>
+
+            <h2 id="libraries"><span class="sec-num">2.2</span>Libraries</h2>
+            <p>Every R package used across all scripts, with a brief description of its role in the pipeline.</p>
+
+            <table class="lib-table">
+              <thead>
+                <tr>
+                  <th>Package</th>
+                  <th>Description</th>
+                  <th>Used in</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>sits</td>
+                  <td>Satellite image time series analysis for earth observation data cubes.</td>
+                  <td>All scripts</td>
+                </tr>
+                <tr>
+                  <td>sf</td>
+                  <td>Support for simple feature access, a standardized way to encode and analyze spatial vector data.
+                  </td>
+                  <td>2, 6</td>
+                </tr>
+                <tr>
+                  <td>terra</td>
+                  <td>Methods for spatial data analysis with vector (points, lines, polygons) and
+                    raster (grid) data. </td>
+                  <td>5, 6</td>
+                </tr>
+                <tr>
+                  <td>dplyr</td>
+                  <td>A grammar of data manipulation for data frame-like objects, both in memory and out of memory.</td>
+                  <td>3, 6</td>
+                </tr>
+                <tr>
+                  <td>tibble</td>
+                  <td>Provides a tbl_df class (the tibble) with stricter checks and better formatting than the
+                    traditional
+                    data frame.</td>
+                  <td>1, 3, 5, 6</td>
+                </tr>
+                <tr>
+                  <td>ggplot2</td>
+                  <td>Elegant data visualisations using the grammar of graphics.</td>
+                  <td>3, 4, 5, 7</td>
+                </tr>
+                <tr>
+                  <td>lubridate</td>
+                  <td>Functions to work with date-times and time-spans: fast and
+                    user friendly parsing of date-time data, extraction and updating of components of a date-time
+                    (years,
+                    months, days, hours, minutes, and seconds), algebraic manipulation on date-time and time-span
+                    objects.
+                  </td>
+                  <td>2, 3, 4, 5</td>
+                </tr>
+                <tr>
+                  <td>purrr</td>
+                  <td>A complete toolkit for functional programming in R, providing a set of functions that simplify
+                    iteration, transformation, and data manipulation.</td>
+                  <td>6</td>
+                </tr>
+                <tr>
+                  <td>stringr</td>
+                  <td>Simple, consistent wrappers for common string operations.</td>
+                  <td>4, 6</td>
+                </tr>
+                <tr>
+                  <td>RColorBrewer</td>
+                  <td>Provides color schemes for maps (and other graphics) designed by Cynthia Brewer.</td>
+                  <td>5, 6</td>
+                </tr>
+                <!--<tr>
+                <td>randomForestExplainer</td>
+                <td>Visualizing Random Forests in terms of variable importance. A set of tools to help
+                  explain which variables are most important in a random forests.</td>
+                <td>6.1, 6.2, 7.2</td>
+              </tr>-->
+                <tr>
+                  <td>units</td>
+                  <td>Support for measurement units in R vectors, matrices and arrays: automatic propagation,
+                    conversion,
+                    derivation and simplification of units; raising errors in case of unit incompatibility.</td>
+                  <td>6</td>
+                </tr>
+                <tr>
+                  <td>smoothr</td>
+                  <td> Tools for smoothing and tidying spatial features (i.e. lines and polygons) to make them more
+                    aesthetically pleasing. Smooth curves, fill holes, and remove small fragments from lines and
+                    polygons.
+                  </td>
+                  <td>6</td>
+                </tr>
+                <tr>
+                  <td>torch</td>
+                  <td>Tensors and Neural Networks with 'GPU' Acceleration.</td>
+                  <td>4</td>
+                </tr>
+                <tr>
+                  <td>luz</td>
+                  <td>Higher Level 'API' for 'torch'.</td>
+                  <td>4</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h2 id="project-structure"><span class="sec-num">2.3</span>Project Structure</h2>
+            <div class="code-block">
+              <div class="code-header">
+                <div class="code-dots">
+                  <div class="cd cd-r"></div>
+                  <div class="cd cd-y"></div>
+                  <div class="cd cd-g"></div>
+                </div>
+                <span class="code-fname">bash</span>
+              </div>
+              <pre class="code-pre">prodes.amz/
 ├── scripts/                    
 ├── data/
 │   ├── raw/
@@ -2918,7 +2680,7 @@ install.packages(<span class="kc">c</span>(
     _dmUpdateBtn();
   }
 
-  /* ── Site search — modal dialog with cross-page results, à la GeoLibre ── */
+  /* ── Site search — full-text index across every page of the site ── */
   (function () {
     var overlay = document.getElementById('search-overlay');
     var trigger = document.getElementById('nb-search-trigger');
@@ -2927,88 +2689,127 @@ install.packages(<span class="kc">c</span>(
     var closeBtn = document.getElementById('search-modal-close');
     if (!overlay || !trigger || !input || !resultsEl) return;
 
+    // Every page in the site. Hardcoded so the index is complete regardless of
+    // which sidebar links happen to be present on the page the user started on.
+    var PAGES = ['index.html', 'stage_1.html', 'stage_2.html', 'stage_3.html', 'stage_4.html', 'stage_5.html', 'stage_6.html'];
     var currentPage = (window.location.pathname.split('/').pop() || 'index.html');
     var index = [];
+    var indexReady = false;
     var activeIndex = -1;
+    var pendingRender = null;
 
-    function pageLabel(href) {
-      var f = href.split('#')[0].split('/').pop() || 'index.html';
-      return f.replace('.html', '').replace(/_/g, ' ').replace(/^\w/, function (c) { return c.toUpperCase(); });
+    function pageLabel(file) {
+      return file.replace('.html', '').replace(/_/g, ' ').replace(/^\w/, function (c) { return c.toUpperCase(); });
     }
 
-    // 1) Index headings on the current page
-    document.querySelectorAll('.content h1[id], .content h2[id], .content h3[id]').forEach(function (h) {
-      index.push({
-        title: h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim(),
-        href: currentPage + '#' + h.id,
-        page: pageLabel(currentPage),
-        current: true
-      });
-    });
+    function cleanText(el) {
+      return el ? el.textContent.replace(/\s+/g, ' ').trim() : '';
+    }
 
-    // 2) Index sidebar navigation entries (works even if cross-page fetch is blocked, e.g. file://)
-    var seenHrefs = {};
-    document.querySelectorAll('.sidebar .sb-item, .sidebar .sb-subitem').forEach(function (el) {
-      var href = el.getAttribute('href');
-      if (!href || seenHrefs[href]) return;
-      seenHrefs[href] = true;
-      index.push({
-        title: el.textContent.trim(),
-        href: href,
-        page: el.getAttribute('target') === '_blank' ? 'External' : pageLabel(href),
-        current: false
-      });
-    });
-
-    // 3) Best-effort: fetch same-origin sibling pages and index their headings too
-    var sameOriginPages = {};
-    document.querySelectorAll('.sidebar .sb-item, .sidebar .sb-subitem').forEach(function (el) {
-      if (el.getAttribute('target') === '_blank') return;
-      var href = el.getAttribute('href') || '';
-      var file = href.split('#')[0];
-      if (file && file.indexOf('http') !== 0 && file !== currentPage) sameOriginPages[file] = true;
-    });
-    Object.keys(sameOriginPages).forEach(function (file) {
-      fetch(file).then(function (r) { return r.ok ? r.text() : null; }).then(function (html) {
-        if (!html) return;
-        var doc = new DOMParser().parseFromString(html, 'text/html');
-        doc.querySelectorAll('.content h1[id], .content h2[id], .content h3[id]').forEach(function (h) {
-          index.push({
-            title: h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim(),
-            href: file + '#' + h.id,
-            page: pageLabel(file),
-            current: false
-          });
+    // Index by <section> — the real content unit on every page (headings sit
+    // inside a nested .page-header div, not as siblings of the body text, so
+    // each section's OWN text — minus any nested sub-sections — is captured
+    // directly, covering every paragraph, caption, table and code block).
+    function indexDocument(doc, file) {
+      var content = doc.querySelector('.content');
+      if (!content) return;
+      var sections = content.querySelectorAll('section[id]');
+      sections.forEach(function (section) {
+        var clone = section.cloneNode(true);
+        clone.querySelectorAll('section, script, style').forEach(function (el) { el.remove(); });
+        var headingEl = clone.querySelector('h1, h2, h3, h4');
+        var title = headingEl ? headingEl.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim() : pageLabel(file);
+        var body = clone.textContent.replace(/\s+/g, ' ').trim();
+        if (!body) return;
+        index.push({
+          title: title,
+          body: body,
+          href: file + '#' + section.id,
+          page: pageLabel(file)
         });
-      }).catch(function () { /* likely blocked under file:// — index still has sidebar entries */ });
-    });
+      });
+    }
 
+    function buildIndex() {
+      var tasks = PAGES.map(function (file) {
+        if (file === currentPage) {
+          indexDocument(document, file);
+          return Promise.resolve();
+        }
+        return fetch(file).then(function (r) { return r.ok ? r.text() : null; })
+          .then(function (html) {
+            if (!html) return;
+            var doc = new DOMParser().parseFromString(html, 'text/html');
+            indexDocument(doc, file);
+          })
+          .catch(function () { /* page unreachable — skipped gracefully */ });
+      });
+      Promise.all(tasks).then(function () { indexReady = true; });
+    }
+
+    buildIndex();
+
+    // Count every occurrence of the query inside a block of text.
+    function countMatches(text, q) {
+      var count = 0, pos = 0, hay = text.toLowerCase();
+      while ((pos = hay.indexOf(q, pos)) !== -1) { count++; pos += q.length; }
+      return count;
+    }
+
+    function makeSnippet(text, q) {
+      var low = text.toLowerCase();
+      var i = low.indexOf(q);
+      if (i === -1) return text.slice(0, 180);
+      var start = Math.max(0, i - 60);
+      return (start > 0 ? '…' : '') + text.slice(start, start + 200) + '…';
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Highlight every match of the query inline, in the results list itself.
+    function highlightText(text, q) {
+      var esc = escapeHtml(text);
+      if (!q) return esc;
+      var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return esc.replace(re, '<mark class="search-highlight">$1</mark>');
+    }
+
+    // Empty query → show nothing at all (no default suggestions).
     function renderResults(query) {
       resultsEl.innerHTML = '';
       activeIndex = -1;
       var q = query.trim().toLowerCase();
-      var matches = !q ? index.filter(function (i) { return i.current; }) : index.filter(function (i) {
-        return i.title.toLowerCase().indexOf(q) !== -1 || i.page.toLowerCase().indexOf(q) !== -1;
-      });
-      // De-duplicate by href, cap results
-      var byHref = {};
-      matches = matches.filter(function (m) {
-        if (byHref[m.href]) return false;
-        byHref[m.href] = true;
-        return true;
-      }).slice(0, 40);
+      if (!q) return;
+
+      var matches = index.map(function (i) {
+        var count = countMatches(i.title, q) * 3 + countMatches(i.body, q);
+        return { entry: i, count: count };
+      }).filter(function (m) { return m.count > 0; });
+      matches.sort(function (a, b) { return b.count - a.count; });
+      matches = matches.slice(0, 40);
 
       if (matches.length === 0) {
-        resultsEl.innerHTML = '<div class="search-empty">No results for "' + query + '"</div>';
+        resultsEl.innerHTML = '<div class="search-empty">' +
+          (!indexReady ? 'Still indexing the rest of the site — try again in a moment…' : 'No results for "' + query + '"') +
+          '</div>';
         return;
       }
 
       matches.forEach(function (m, i) {
+        var entry = m.entry;
         var item = document.createElement('a');
         item.className = 'search-result';
-        item.href = m.href;
-        item.innerHTML = '<span class="search-result-title">' + m.title + '</span>' +
-          '<span class="search-result-page">' + m.page + '</span>';
+        var hrefParts = entry.href.split('#');
+        item.href = hrefParts[0] + '?hl=' + encodeURIComponent(q) + (hrefParts[1] ? '#' + hrefParts[1] : '');
+        var snippetText = makeSnippet(entry.body, q);
+        item.innerHTML =
+          '<span class="search-result-main">' +
+          '<span class="search-result-title">' + highlightText(entry.title, q) + '</span>' +
+          '<span class="search-result-snippet">' + highlightText(snippetText, q) + '</span>' +
+          '</span>' +
+          '<span class="search-result-page">' + entry.page + ' · ' + m.count + ' match' + (m.count === 1 ? '' : 'es') + '</span>';
         item.addEventListener('mouseenter', function () { setActive(i); });
         item.addEventListener('click', closeModal);
         resultsEl.appendChild(item);
@@ -3029,7 +2830,7 @@ install.packages(<span class="kc">c</span>(
       overlay.hidden = false;
       document.body.style.overflow = 'hidden';
       input.value = '';
-      renderResults('');
+      resultsEl.innerHTML = '';
       setTimeout(function () { input.focus(); }, 10);
     }
 
@@ -3042,7 +2843,11 @@ install.packages(<span class="kc">c</span>(
     if (closeBtn) closeBtn.addEventListener('click', closeModal);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
 
-    input.addEventListener('input', function () { renderResults(input.value); });
+    input.addEventListener('input', function () {
+      clearTimeout(pendingRender);
+      var val = input.value;
+      pendingRender = setTimeout(function () { renderResults(val); }, 80);
+    });
 
     input.addEventListener('keydown', function (e) {
       var items = resultsEl.querySelectorAll('.search-result');
@@ -3068,24 +2873,53 @@ install.packages(<span class="kc">c</span>(
     });
   })();
 
-  /* ── "On this page" panel — auto-built from the page's own headings ── */
+  // ── Highlight the searched term when arriving via a search result ──
+  (function () {
+    var q = new URLSearchParams(window.location.search).get('hl');
+    if (!q) return;
+    var content = document.querySelector('.content');
+    if (!content) return;
+    var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    function walk(node) {
+      if (node.nodeType === 3) {
+        if (node.nodeValue && re.test(node.nodeValue)) {
+          var span = document.createElement('span');
+          span.innerHTML = node.nodeValue.replace(re, '<mark class="search-highlight">$1</mark>');
+          node.parentNode.replaceChild(span, node);
+        }
+      } else if (node.nodeType === 1 && !/^(SCRIPT|STYLE|MARK)$/.test(node.tagName)) {
+        Array.prototype.slice.call(node.childNodes).forEach(walk);
+      }
+    }
+    Array.prototype.slice.call(content.childNodes).forEach(walk);
+    var first = content.querySelector('mark.search-highlight');
+    if (first) setTimeout(function () { first.scrollIntoView({ block: 'center' }); }, 60);
+    history.replaceState(null, '', window.location.pathname + window.location.hash);
+  })();
+
+  /* ── "On this page" panel — limited to the top-level sections only ── */
   (function () {
     var tocNav = document.getElementById('toc-links');
     var tocAside = document.getElementById('page-toc');
     if (!tocNav || !tocAside) return;
 
-    var headings = Array.prototype.slice.call(document.querySelectorAll('.content h2[id], .content h3[id]'));
-    if (headings.length === 0) { tocAside.style.display = 'none'; return; }
-
+    var sectionIds = ['introduction', 'setup', 'flowchart', 'references'];
     var tocLinks = [];
-    headings.forEach(function (h) {
+
+    sectionIds.forEach(function (id) {
+      var sectionEl = document.getElementById(id);
+      if (!sectionEl) return;
+      var titleEl = sectionEl.querySelector('h1.page-title');
+      var label = titleEl ? titleEl.textContent.trim() : id;
       var a = document.createElement('a');
-      a.className = 'toc-link' + (h.tagName === 'H3' ? ' toc-sub' : '');
-      a.href = '#' + h.id;
-      a.textContent = h.textContent.replace(/^\s*\d+(\.\d+)*\s*/, '').trim();
+      a.className = 'toc-link';
+      a.href = '#' + id;
+      a.textContent = label;
       tocNav.appendChild(a);
-      tocLinks.push({ el: a, heading: h });
+      tocLinks.push({ el: a, heading: sectionEl });
     });
+
+    if (tocLinks.length === 0) { tocAside.style.display = 'none'; return; }
 
     function onTocScroll() {
       var current = tocLinks[0];
