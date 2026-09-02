@@ -99,7 +99,6 @@ for (tile in tiles) {
       collection  = "SENTINEL-2-16D",
       raster_cube = cube,
       vector_dir  = vector_path,
-      vector_band = "segments",
       version     = seg_version,
       parse_info  = c("satellite", "sensor", "tile", "start_date",
                       "end_date", "band", "version", "X1")
