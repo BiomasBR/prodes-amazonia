@@ -491,7 +491,7 @@ process_tile <- function(tile) {
   labels <- c('Clear_Cut', 'Clear_Cut_Herbaceous', 'Mininig')
   labels_ids <- match(labels, sits_labels(model))
   
-  if (anyNA(labels_ids)) {
+  if (all(is.na(labels_ids))) {
     stop(
       "The following labels were not found in sits_labels(model): ",
       paste(labels[is.na(labels_ids)], collapse = ", "),
