@@ -500,14 +500,20 @@ process_tile <- function(tile) {
     )
   }
   
+  valid_idx <- !is.na(labels_ids)
+  
+  valid_ids <- labels_ids[valid_idx]
+  valid_labels <- labels[valid_idx]
+  
+  
   deforest_class <- ifel(
-    raw_class %in% labels_ids,
+    raw_class %in% valid_ids,
     raw_class,
     NA
   ) |>
     categories(value = data.frame(
-      ID = labels_ids,
-      classe = labels
+      ID = valid_ids,
+      classe = valid_labels
     ))
   
   vector_class <- as.polygons(deforest_class, aggregate = TRUE)
