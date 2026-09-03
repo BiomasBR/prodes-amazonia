@@ -15,8 +15,6 @@ model_name      <- "tcnn-model_2y_2023-08-01_2025-07-28_2026-08-03_eco-3-mt-47d-
 seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular" #SITS recognizes the underscore (_) character as a separator.
 label_method    <- "mean"
 
-
-
 # Extract the date of the string separated by "_"
 start_date     <- "2024-08-01"
 end_date       <- "2026-07-31"
