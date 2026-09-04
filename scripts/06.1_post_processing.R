@@ -493,27 +493,44 @@ process_tile <- function(tile) {
   
   if (all(is.na(labels_ids))) {
     stop(
-      "The following labels were not found in sits_labels(model): ",
-      paste(labels[is.na(labels_ids)], collapse = ", "),
+      "None of the labels were found in sits_labels(model): ",
+      paste(labels, collapse = ", "),
       ". Labels available in the model: ",
       paste(sits_labels(model), collapse = ", ")
     )
   }
   
-  valid_idx <- !is.na(labels_ids)
+  # Keep only the labels that exist in this specific model
+  missing_labels <- labels[is.na(labels_ids)]
+  if (length(missing_labels) > 0) {
+    message(
+      "Warning: the following labels do not exist in this model and will be ignored: ",
+      paste(missing_labels, collapse = ", ")
+    )
+  }
   
-  valid_ids <- labels_ids[valid_idx]
-  valid_labels <- labels[valid_idx]
-  
+  found <- !is.na(labels_ids)
+  labels <- labels[found]
+  labels_ids <- labels_ids[found]
   
   deforest_class <- ifel(
-    raw_class %in% valid_ids,
+    raw_class %in% labels_ids,
     raw_class,
     NA
   ) |>
     categories(value = data.frame(
-      ID = valid_ids,
-      classe = valid_labels
+      ID = labels_ids,
+      classe = labels
+    ))
+  
+  deforest_class <- ifel(
+    raw_class %in% labels_ids,
+    raw_class,
+    NA
+  ) |>
+    categories(value = data.frame(
+      ID = labels_ids,
+      classe = labels
     ))
   
   vector_class <- as.polygons(deforest_class, aggregate = TRUE)
