@@ -522,17 +522,7 @@ process_tile <- function(tile) {
       ID = labels_ids,
       classe = labels
     ))
-  
-  deforest_class <- ifel(
-    raw_class %in% labels_ids,
-    raw_class,
-    NA
-  ) |>
-    categories(value = data.frame(
-      ID = labels_ids,
-      classe = labels
-    ))
-  
+    
   vector_class <- as.polygons(deforest_class, aggregate = TRUE)
   names(vector_class) <- "class"
   vector_multipolygons <- aggregate(vector_class, by = "class")
