@@ -8,15 +8,12 @@ library(tibble)
 
 # Paths for files and folders
 mixture_path    <- 'data/raw/mixture_model'
-tiles           <- c('024016',
-                     '016016',
-                     '026012',
-                     '017021',
-                     '020017',
-                     '018016',
-                     '012019')
+tiles           <- c('002014','003014','003015','003016',
+                     '004014','004015','004016','005014',
+                     '005015','005016','005017','006014',
+                     '006015','006016','006017')
 start_date      <- '2026-07-12'
-end_date        <- '2026-07-28'
+end_date        <- '2026-08-31'
 n_cores         <- 28
 
 sits_parallel(workers = n_cores)

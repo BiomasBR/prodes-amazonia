@@ -10,14 +10,16 @@ library(terra)
 library(RColorBrewer)
 
 # Define the parameters: These are user-defined variables
-tiles           <- c('016016','018016')
-model_name      <- "tcnn-model_2y_2023-08-01_2025-07-28_2026-08-03_eco-3-mt-47d-vsits2_2026-08-18_00h22m.rds"
+tiles           <- c('021009','020010','024008','029009','029010','024007','025011','030009')
+model_name      <- "tcnn-model_2y_2023-08-01_2025-08-13_2026-08-10_eco-4-pa-48d-vsits2_2026-08-19_17h26m.rds"
 seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular" #SITS recognizes the underscore (_) character as a separator.
 label_method    <- "mean"
 
+
+
 # Extract the date of the string separated by "_"
 start_date     <- "2024-08-01"
-end_date       <- "2026-07-31"
+end_date       <- "2026-08-13"
 
 # File and folder paths 
 models <- c("rf"   = "random_forest",
@@ -97,6 +99,7 @@ for (tile in tiles) {
       collection  = "SENTINEL-2-16D",
       raster_cube = cube,
       vector_dir  = vector_path,
+      vector_band = "segments",
       version     = seg_version,
       parse_info  = c("satellite", "sensor", "tile", "start_date",
                       "end_date", "band", "version", "X1")
