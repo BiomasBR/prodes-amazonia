@@ -186,7 +186,7 @@ for (tile in tiles) {
           source     = "BDC",
           collection = "SENTINEL-2-16D",
           bands      = c('B02','B03','B04','B05','B06','B07',
-                         'B08','B8A','B11','B12','CLOUD'),
+                         'B08','B8A','B11','B12'),
           tiles      = tile,
           start_date = format(start_date_month, "%Y-%m-%d"),
           end_date   = format(end_date_fixed, "%Y-%m-%d"),
