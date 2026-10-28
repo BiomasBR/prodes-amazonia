@@ -417,12 +417,8 @@ chop_polygons <- function(pol, class, mask, dist){
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  combined$touches_mask <- lengths(
-    st_intersects(combined, mask)
-  ) > 0
-  
   combined <- combined |>
-    dplyr::filter(area_ha2 >= 1 | touches_mask == TRUE)
+    dplyr::filter(area_ha2 >= 1)
   
   return(combined)
 }
