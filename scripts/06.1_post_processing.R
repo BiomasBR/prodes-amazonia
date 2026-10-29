@@ -14,15 +14,15 @@ library(stringr)
 library(RANN)
 
 # Define the parameters: These are user-defined variables
-model_name  <- "tcnn-model_2y_2023-08-01_2025-07-28_2026-08-03_eco-3-mt-47d-vsits2_2026-08-18_00h22m.rds"
-version     <- "tcnn-2y-eco-3-mt-47d-vsits2-mean"
-tiles       <- c('020016')
+tiles           <- c('016016','018016')
+model_name      <- "tcnn-model_2y_2023-08-01_2025-07-28_2026-08-03_eco-3-mt-47d-vsits2_2026-08-18_00h22m.rds"
+version         <- "tcnn-2y-eco-3-mt-47d-vsits2-mean"
 
 # File and folder paths
-seg_version <- "lsmm-snic-spac10-comp03-pad0-rectangular"
-class_path  <- "data/class"
-mask_path   <- "data/raw/auxiliary/mascara_geral_amz_v2025_postgis_nb.gpkg"
-config_dir  <- ".."
+seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular"
+class_path      <- "data/class"
+mask_path       <- "data/raw/auxiliary/mascara_geral_amz_v2025_postgis_nb.gpkg"
+config_dir      <- ".."
 
 # Brazil Albers Equal Area (EPSG 10857)
 crs_proc <- "PROJCRS[\"unknown\",\n    BASEGEOGCRS[\"unknown\",\n        DATUM[\"Unknown based on GRS80 ellipsoid\",\n            ELLIPSOID[\"GRS 1980\",6378137,298.257222101004,\n                LENGTHUNIT[\"metre\",1],\n                ID[\"EPSG\",7019]]],\n        PRIMEM[\"Greenwich\",0,\n            ANGLEUNIT[\"degree\",0.0174532925199433,\n                ID[\"EPSG\",9122]]]],\n    CONVERSION[\"Albers Equal Area\",\n        METHOD[\"Albers Equal Area\",\n            ID[\"EPSG\",9822]],\n        PARAMETER[\"Latitude of false origin\",-12,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8821]],\n        PARAMETER[\"Longitude of false origin\",-54,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8822]],\n        PARAMETER[\"Latitude of 1st standard parallel\",-2,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8823]],\n        PARAMETER[\"Latitude of 2nd standard parallel\",-22,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8824]],\n        PARAMETER[\"Easting at false origin\",5000000,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8826]],\n        PARAMETER[\"Northing at false origin\",10000000,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8827]]],\n    CS[Cartesian,2],\n        AXIS[\"easting\",east,\n            ORDER[1],\n            LENGTHUNIT[\"metre\",1,\n                ID[\"EPSG\",9001]]],\n        AXIS[\"northing\",north,\n            ORDER[2],\n            LENGTHUNIT[\"metre\",1,\n                ID[\"EPSG\",9001]]]]"
@@ -417,12 +417,8 @@ chop_polygons <- function(pol, class, mask, dist){
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  combined$touches_mask <- lengths(
-    st_intersects(combined, mask)
-  ) > 0
-  
   combined <- combined |>
-    dplyr::filter(area_ha2 >= 1 | touches_mask == TRUE)
+    dplyr::filter(area_ha2 >= 1)
   
   return(combined)
 }
@@ -491,14 +487,27 @@ process_tile <- function(tile) {
   labels <- c('Clear_Cut', 'Clear_Cut_Herbaceous', 'Mininig')
   labels_ids <- match(labels, sits_labels(model))
   
-  if (anyNA(labels_ids)) {
+  if (all(is.na(labels_ids))) {
     stop(
-      "The following labels were not found in sits_labels(model): ",
-      paste(labels[is.na(labels_ids)], collapse = ", "),
+      "None of the labels were found in sits_labels(model): ",
+      paste(labels, collapse = ", "),
       ". Labels available in the model: ",
       paste(sits_labels(model), collapse = ", ")
     )
   }
+  
+  # Keep only the labels that exist in this specific model
+  missing_labels <- labels[is.na(labels_ids)]
+  if (length(missing_labels) > 0) {
+    message(
+      "Warning: the following labels do not exist in this model and will be ignored: ",
+      paste(missing_labels, collapse = ", ")
+    )
+  }
+  
+  found <- !is.na(labels_ids)
+  labels <- labels[found]
+  labels_ids <- labels_ids[found]
   
   deforest_class <- ifel(
     raw_class %in% labels_ids,
@@ -509,7 +518,7 @@ process_tile <- function(tile) {
       ID = labels_ids,
       classe = labels
     ))
-  
+    
   vector_class <- as.polygons(deforest_class, aggregate = TRUE)
   names(vector_class) <- "class"
   vector_multipolygons <- aggregate(vector_class, by = "class")
@@ -706,7 +715,7 @@ process_tile <- function(tile) {
            tile,
            ".gpkg")
   )
-  
+            
   sf::st_write(final, dsn = output_file, delete_dsn = TRUE)
   
   log_step_time("Step 10", t_step)

@@ -2,7 +2,7 @@ Prodes-Amazônia experiments and pipelines developed using the SITS package
 ================
 <p align="center">
   <img src="https://img.shields.io/badge/License-GPLv3-blue" />
-  <img src="https://img.shields.io/badge/Lifecycle-maturing-green.svg" />
+  <img src="https://img.shields.io/badge/Lifecycle-experimental-orange.svg" />
   <img src="https://img.shields.io/badge/sits-2.0.0-276DC3?logo=r&logoColor=white" />
 </p>
 <img src="./inst/extdata/sticker/logo-biomas-br.png" alt="RESTORE+ icon" align="right" height="150" width="150"/>
