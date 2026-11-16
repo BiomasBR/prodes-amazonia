@@ -545,7 +545,7 @@ process_tile <- function(tile) {
       ID = labels_ids,
       classe = labels
     ))
-    
+  
   vector_class <- as.polygons(deforest_class, aggregate = TRUE)
   names(vector_class) <- "class"
   vector_multipolygons <- aggregate(vector_class, by = "class")
@@ -717,7 +717,7 @@ process_tile <- function(tile) {
   if (!is.null(chopped_polygons) &&
       nrow(chopped_polygons) > 0) {
     
-      chopped_polygons <- chop_polygons(chopped_polygons, raw_class, dist = -16)
+    chopped_polygons <- chop_polygons(chopped_polygons, raw_class, dist = -16)
   }
   
   log_step_time("Step 9", t_step)
@@ -746,7 +746,7 @@ process_tile <- function(tile) {
            tile,
            ".gpkg")
   )
-            
+  
   sf::st_write(final, dsn = output_file, delete_dsn = TRUE)
   
   log_step_time("Step 10", t_step)
