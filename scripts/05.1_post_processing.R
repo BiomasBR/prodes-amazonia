@@ -14,9 +14,9 @@ library(stringr)
 library(RANN)
 
 # Define the parameters: These are user-defined variables
-tiles           <- c('016016','018016')
-model_name      <- "tcnn-model_2y_2023-08-01_2025-07-28_2026-08-03_eco-3-mt-47d-vsits2_2026-08-18_00h22m.rds"
-version         <- "tcnn-2y-eco-3-mt-47d-vsits2-mean"
+tiles           <- c("012001")  
+model_name      <- "tcnn-model_2y_2023-08-01_2025-07-31_2026-08-11_eco-1-rr-47d-vsits2_2026-08-20_01h33m.rds"
+version         <- "tcnn-2y-eco-1-rr-47d-vsits2-mean"
 
 # File and folder paths
 seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular"
@@ -314,7 +314,11 @@ calculate_edge_metrics <- function(class, prodes_mask, crs_planar) {
 }
 
 # Chop polygons
-chop_polygons <- function(pol, class, mask, dist){
+chop_polygons <- function(pol, class, dist){
+  
+  if (is.null(pol) || nrow(pol) == 0) {
+    return(pol)
+  }
   
   buf_neg <- st_buffer(
     pol,
@@ -325,6 +329,13 @@ chop_polygons <- function(pol, class, mask, dist){
   
   # Remove null or invalid geometries that may appear
   buf_neg <- buf_neg[!st_is_empty(buf_neg), ]
+  
+  if(nrow(buf_neg) < 1){
+    message("Warning: Polygons Too small for chopping, returning original polygons > 1ha")
+    pol$area_ha2 <- as.numeric(sf::st_area(pol)) / 10000
+    return(dplyr::filter(pol, area_ha2 >= 1))
+  }
+  
   buf_neg <- st_make_valid(buf_neg) |>
     st_collection_extract("POLYGON") |>
     st_cast("POLYGON")
@@ -350,6 +361,16 @@ chop_polygons <- function(pol, class, mask, dist){
   )
   
   seed_cells <- which(!is.na(values(sementes)))
+  
+  if (length(seed_cells) == 0L) {
+    message("Warning: No seed cells generated after rasterization, returning original polygons > 1ha")
+    
+    pol$area_ha2 <- as.numeric(st_area(pol)) / 10000
+    
+    return(
+      dplyr::filter(pol, area_ha2 >= 1)
+    )
+  }
   
   # Coordinates of these cells
   seed_centroid <- xyFromCell(
@@ -386,24 +407,30 @@ chop_polygons <- function(pol, class, mask, dist){
   allocated_polygons$area_ha <- expanse(allocated_polygons, unit = "ha")
   
   large  <- allocated_polygons[allocated_polygons$area_ha >= 1, ]
-  small <- disagg(
-    aggregate(
-      allocated_polygons[allocated_polygons$area_ha <  1, ]
+  small <- allocated_polygons[allocated_polygons$area_ha <  1, ]
+  
+  if (nrow(large) == 0) {
+    message("Warning: Polygons Too small for chopping, returning original polygons > 1ha")
+    pol$area_ha2 <- as.numeric(sf::st_area(pol)) / 10000
+    return(dplyr::filter(pol, area_ha2 >= 1))
+  }
+  
+  if (nrow(small) > 0) {
+    small <- terra::disagg(terra::aggregate(small))
+    combined1 <- combineGeoms(
+      x        = large,
+      y        = small,
+      overlap  = FALSE,
+      boundary = TRUE,
+      distance = FALSE,
+      dissolve = TRUE,
+      erase    = TRUE,
+      append   = TRUE       # includes geometries of y that do not match
     )
-  )
-  
-  combined1 <- combineGeoms(
-    x        = large,
-    y        = small,
-    overlap  = FALSE,
-    boundary = TRUE,
-    distance = FALSE,
-    dissolve = TRUE,
-    erase    = TRUE,
-    append   = TRUE       # includes geometries of y that do not match
-  )
-  
-  combined <- disagg(combined1)
+    combined <- disagg(combined1)
+  } else {
+    combined <- terra::disagg(large)
+  }
   
   combined$area_ha2 <- expanse(combined, unit = "ha")
   
@@ -518,7 +545,7 @@ process_tile <- function(tile) {
       ID = labels_ids,
       classe = labels
     ))
-    
+  
   vector_class <- as.polygons(deforest_class, aggregate = TRUE)
   names(vector_class) <- "class"
   vector_multipolygons <- aggregate(vector_class, by = "class")
@@ -676,7 +703,7 @@ process_tile <- function(tile) {
     sf::st_make_valid() |>
     sf::st_collection_extract("POLYGON")
   
-  rm(smoothed, class_diff_mask)
+  rm(smoothed, class_diff_mask, mask_union)
   gc()
   log_step_time("Step 8", t_step)
   
@@ -686,12 +713,16 @@ process_tile <- function(tile) {
   t_step <- Sys.time()
   message("Step 9 of 10-> Chopping polygons")
   
-  chopped_polygons <- chop_polygons(supression_polygons, raw_class, mask_union, -51)
-  chopped_polygons <- chop_polygons(chopped_polygons, raw_class, mask_union, -16)
+  chopped_polygons <- chop_polygons(supression_polygons, raw_class, -51)
+  if (!is.null(chopped_polygons) &&
+      nrow(chopped_polygons) > 0) {
+    
+    chopped_polygons <- chop_polygons(chopped_polygons, raw_class, dist = -16)
+  }
   
   log_step_time("Step 9", t_step)
   
-  rm(supression_polygons, raw_class, mask_union)
+  rm(supression_polygons, raw_class)
   gc()
   
   # ----------------------------------------------------------
@@ -715,7 +746,7 @@ process_tile <- function(tile) {
            tile,
            ".gpkg")
   )
-            
+  
   sf::st_write(final, dsn = output_file, delete_dsn = TRUE)
   
   log_step_time("Step 10", t_step)
