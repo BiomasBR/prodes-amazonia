@@ -555,6 +555,7 @@ process_tile <- function(tile) {
   rm(deforest_class, vector_class)
   gc()
   log_step_time("Step 2", t_step)
+  if (nrow(vector_multipolygons) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
   # 3. Remove polygons outside the biome border
@@ -569,6 +570,7 @@ process_tile <- function(tile) {
   }
   rm(vector_multipolygons)
   gc()
+  if (nrow(class_biome) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
   # 4. Extraction of cloud features
@@ -602,6 +604,7 @@ process_tile <- function(tile) {
   rm(result, cloud_vec, class_biome)
   gc()
   log_step_time("Step 5", t_step)
+  if (nrow(sits_classification_cloud_cleaned) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
   # 6. Remove polygons < 1.3 hectare
@@ -640,6 +643,7 @@ process_tile <- function(tile) {
   rm(sits_classification_cloud_cleaned)
   gc()
   log_step_time("Step 6", t_step)
+  if (nrow(class_filtered) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
   # 7. Fill holes < 1.3 hectare
@@ -706,6 +710,7 @@ process_tile <- function(tile) {
   rm(smoothed, class_diff_mask, mask_union)
   gc()
   log_step_time("Step 8", t_step)
+  if (nrow(supression_polygons) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
   # Chopping polygons
