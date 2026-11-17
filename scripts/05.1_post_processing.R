@@ -14,9 +14,9 @@ library(stringr)
 library(RANN)
 
 # Define the parameters: These are user-defined variables
-tiles           <- c("012001")  
-model_name      <- "tcnn-model_2y_2023-08-01_2025-07-31_2026-08-11_eco-1-rr-47d-vsits2_2026-08-20_01h33m.rds"
-version         <- "tcnn-2y-eco-1-rr-47d-vsits2-mean"
+tiles           <- c("005007")  
+model_name      <- "tcnn-model_2y_2023-08-01_2025-07-13_2026-09-02_eco-2-ac-46d-vsits2_2026-09-02_10h19m.rds"
+version         <- "tcnn-2y-eco-2-ac-46d-vsits2-mean"
 
 # File and folder paths
 seg_version     <- "lsmm-snic-spac10-comp03-pad0-rectangular"
@@ -585,9 +585,10 @@ process_tile <- function(tile) {
   
   rm(deforest_class, vector_class)
   gc()
+  
   log_step_time("Step 2", t_step)
   log_feature_count("Step 2", vector_multipolygons)
-  if (nrow(vector_multipolygons) == 0) return(invisible(NULL))
+  if (nrow(vector_multipolygons) == 0) return(invisible("EMPTY"))
   
   # ----------------------------------------------------------
   # 3. Remove polygons outside the biome border
@@ -602,9 +603,10 @@ process_tile <- function(tile) {
   }
   rm(vector_multipolygons)
   gc()
+  
   log_step_time("Step 3", t_step)
   log_feature_count("Step 3", class_biome)
-  if (nrow(class_biome) == 0) return(invisible(NULL))
+  if (nrow(class_biome) == 0) return(invisible("EMPTY"))
   
   # ----------------------------------------------------------
   # 4. Extraction of cloud features
@@ -621,6 +623,7 @@ process_tile <- function(tile) {
   
   cloud_vec    <- result$cloud_vec
   end_date_scl <- result$end_date_scl
+  
   log_step_time("Step 4", t_step)
   log_feature_count("Step 4 (cloud polygons)", cloud_vec)
   
@@ -638,9 +641,10 @@ process_tile <- function(tile) {
   
   rm(result, cloud_vec, class_biome)
   gc()
+  
   log_step_time("Step 5", t_step)
   log_feature_count("Step 5", sits_classification_cloud_cleaned)
-  if (nrow(sits_classification_cloud_cleaned) == 0) return(invisible(NULL))
+  if (nrow(sits_classification_cloud_cleaned) == 0) return(invisible("EMPTY"))
   
   # ----------------------------------------------------------
   # 6. Remove polygons < 1.3 hectare
@@ -681,9 +685,10 @@ process_tile <- function(tile) {
   
   rm(sits_classification_cloud_cleaned)
   gc()
+  
   log_step_time("Step 6", t_step)
   log_feature_count("Step 6 (after filter)", class_filtered)
-  if (nrow(class_filtered) == 0) return(invisible(NULL))
+  if (nrow(class_filtered) == 0) return(invisible("EMPTY"))
   
   # ----------------------------------------------------------
   # 7. Fill holes < 1.3 hectare
@@ -750,15 +755,16 @@ process_tile <- function(tile) {
   
   rm(smoothed, class_diff_mask, mask_union)
   gc()
+  
   log_step_time("Step 8", t_step)
   log_feature_count("Step 8", supression_polygons)
-  if (nrow(supression_polygons) == 0) return(invisible(NULL))
+  if (nrow(supression_polygons) == 0) return(invisible("EMPTY"))
   
   # ----------------------------------------------------------
   # 9. Chopping polygons
   # ----------------------------------------------------------
   t_step <- Sys.time()
-  message("Step 9 of 10-> Chopping polygons")
+  message("Step 9 of 10 -> Chopping polygons")
   
   chopped_polygons <- chop_polygons(supression_polygons, raw_class, -51)
   if (!is.null(chopped_polygons) &&
@@ -767,11 +773,16 @@ process_tile <- function(tile) {
     chopped_polygons <- chop_polygons(chopped_polygons, raw_class, dist = -16)
   }
   
-  log_step_time("Step 9", t_step)
-  log_feature_count("Step 9", chopped_polygons)
-  
   rm(supression_polygons, raw_class)
   gc()
+
+  log_step_time("Step 9", t_step)
+  log_feature_count("Step 9", chopped_polygons)
+    
+  if (is.null(chopped_polygons) || nrow(chopped_polygons) == 0) {
+    message("Tile ", tile, ": no polygons left after chopping. Nothing to save.")
+    return(invisible("EMPTY"))
+  }
   
   # ----------------------------------------------------------
   # 10. Save final result
@@ -832,12 +843,17 @@ for (tile in tiles) {
 # 6. Final summary
 # ============================================================
 
-success <- names(results)[!vapply(results, is.null, logical(1))]
-failure   <- names(results)[vapply(results, is.null, logical(1))]
+is_empty   <- vapply(results, identical, logical(1), "EMPTY")
+is_failure <- vapply(results, is.null, logical(1))
+
+empty   <- names(results)[is_empty]
+failure <- names(results)[is_failure]
+success <- names(results)[!is_empty & !is_failure]
 
 message("\n========== PROCESSING SUMMARY ==========")
 message("Total tiles: ", length(tiles))
 message("Success (", length(success), "): ", paste(success, collapse = ", "))
+message("Empty - no polygons (", length(empty), "): ", paste(empty, collapse = ", "))
 if (length(failure) > 0) {
   message("Failure (", length(failure), "): ", paste(failure, collapse = ", "))
 } else {
