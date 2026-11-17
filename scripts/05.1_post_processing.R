@@ -456,6 +456,37 @@ log_step_time <- function(step_name, start_time) {
   message("--> [Processing Time ", step_name, "]: ", elapsed, " seconds")
 }
 
+# Count features (rows) and polygons (parts of MULTIPOLYGONs) at the end of a step
+log_feature_count <- function(step_name, x) {
+  if (is.null(x)) {
+    message("--> [Features ", step_name, "]: 0 (NULL)")
+    return(invisible(0L))
+  }
+  
+  # Objects not from sf (e.g. SpatVector)
+  if (!inherits(x, "sf") && !inherits(x, "sfc")) {
+    n <- nrow(x)
+    message("--> [Features ", step_name, "]: ", format(n, big.mark = "."))
+    return(invisible(n))
+  }
+  
+  geom    <- sf::st_geometry(x)
+  n_rows  <- length(geom)
+  n_parts <- sum(vapply(
+    geom,
+    function(g) if (inherits(g, "MULTIPOLYGON")) length(g) else 1L,
+    integer(1)
+  ))
+  
+  if (n_parts != n_rows) {
+    message("--> [Features ", step_name, "]: ", format(n_rows, big.mark = "."),
+            " feature(s) (", format(n_parts, big.mark = "."), " polygons)")
+  } else {
+    message("--> [Features ", step_name, "]: ", format(n_rows, big.mark = "."))
+  }
+  invisible(n_rows)
+}
+
 # ============================================================
 # 4. Main function: process ONE tile
 # ============================================================
@@ -555,6 +586,7 @@ process_tile <- function(tile) {
   rm(deforest_class, vector_class)
   gc()
   log_step_time("Step 2", t_step)
+  log_feature_count("Step 2", vector_multipolygons)
   if (nrow(vector_multipolygons) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
@@ -570,6 +602,8 @@ process_tile <- function(tile) {
   }
   rm(vector_multipolygons)
   gc()
+  log_step_time("Step 3", t_step)
+  log_feature_count("Step 3", class_biome)
   if (nrow(class_biome) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
@@ -588,6 +622,7 @@ process_tile <- function(tile) {
   cloud_vec    <- result$cloud_vec
   end_date_scl <- result$end_date_scl
   log_step_time("Step 4", t_step)
+  log_feature_count("Step 4 (cloud polygons)", cloud_vec)
   
   # ----------------------------------------------------------
   # 5. Cloud/shadow difference
@@ -604,6 +639,7 @@ process_tile <- function(tile) {
   rm(result, cloud_vec, class_biome)
   gc()
   log_step_time("Step 5", t_step)
+  log_feature_count("Step 5", sits_classification_cloud_cleaned)
   if (nrow(sits_classification_cloud_cleaned) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
@@ -633,6 +669,9 @@ process_tile <- function(tile) {
   sits_classification_cloud_cleaned$touches_mask <- lengths(
     sf::st_intersects(sits_classification_cloud_cleaned, mask_union)
   ) > 0
+
+  # right BEFORE the filter (after computing touches_mask)
+  log_feature_count("Step 6 (before filter)", sits_classification_cloud_cleaned)
   
   class_filtered <- sits_classification_cloud_cleaned |>
     dplyr::filter(area_ha >= 1 | touches_mask == TRUE)|>
@@ -643,6 +682,7 @@ process_tile <- function(tile) {
   rm(sits_classification_cloud_cleaned)
   gc()
   log_step_time("Step 6", t_step)
+  log_feature_count("Step 6 (after filter)", class_filtered)
   if (nrow(class_filtered) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
@@ -686,6 +726,7 @@ process_tile <- function(tile) {
     sf::st_collection_extract("POLYGON")
   
   log_step_time("Step 7", t_step)
+  log_feature_count("Step 7", class_diff_mask)
   
   # ----------------------------------------------------------
   # 8. Remove old boundaries polygons
@@ -710,10 +751,11 @@ process_tile <- function(tile) {
   rm(smoothed, class_diff_mask, mask_union)
   gc()
   log_step_time("Step 8", t_step)
+  log_feature_count("Step 8", supression_polygons)
   if (nrow(supression_polygons) == 0) return(invisible(NULL))
   
   # ----------------------------------------------------------
-  # Chopping polygons
+  # 9. Chopping polygons
   # ----------------------------------------------------------
   t_step <- Sys.time()
   message("Step 9 of 10-> Chopping polygons")
@@ -726,6 +768,7 @@ process_tile <- function(tile) {
   }
   
   log_step_time("Step 9", t_step)
+  log_feature_count("Step 9", chopped_polygons)
   
   rm(supression_polygons, raw_class)
   gc()
@@ -755,6 +798,7 @@ process_tile <- function(tile) {
   sf::st_write(final, dsn = output_file, delete_dsn = TRUE)
   
   log_step_time("Step 10", t_step)
+  log_feature_count("Step 10 (saved)", final)
   
   message("Tile ", tile, " successfully processed -> ", output_file)
   
