@@ -36,7 +36,7 @@ date_process    <- format(Sys.Date(), "%Y-%m-%d")
 
 # Spectral bands
 bands           <- c('B02', 'B03', 'B04', 'B05', 'B06', 'B07',
-                     'B08', 'B8A', 'B11', 'B12')
+                     'B08', 'B8A', 'B11', 'B12','CLOUD')
 
 # Endmember values (class names cannot contain numbers)
 endmembers <- tibble::tribble(
