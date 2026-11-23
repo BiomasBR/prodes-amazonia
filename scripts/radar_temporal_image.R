@@ -2,7 +2,7 @@ library(rstac)
 library(terra)
 library(lubridate)
 
-tiles <- c("015002")
+tiles <- c('024005','024006','025001','025002','025003','025004','025005','025006','026005','026006','027006','028006','029006','029007','030006','031007','031008','032007','032008')
 
 ano <- '2026' #formato YYY-MM-DD
 
@@ -43,7 +43,7 @@ build_vh_mosaic <- function(
       collections = "sentinel-1-rtc-1",
       bbox = as.numeric(bbox),
       datetime = date_search) |>
-    #rstac::ext_query(orbit_direction == "DESCENDING") |>
+    rstac::ext_query(orbit_direction == "DESCENDING") |>
     rstac::post_request() |>
     rstac::items_fetch()
   
@@ -117,6 +117,7 @@ build_vh_mosaic <- function(
     ratio_rasters[[i]] <- r_cropped
     
     rm(r, r_cropped)
+    gc()
   }
   
   ## ---------------------------------------------------------------------
@@ -125,6 +126,7 @@ build_vh_mosaic <- function(
   message("Applying orbit filter...")
   
   filtered_rasters <- apply_filter_by_orbit(ratio_rasters, scene_orbits)
+  gc()
   
   ## ---------------------------------------------------------------------
   ## 3) Para CADA data única, faz o merge das cenas daquele dia -> 1 tile
@@ -160,6 +162,7 @@ build_vh_mosaic <- function(
     }
     
     date_rasters[[k]] <- day_raster
+    gc()
   }
   
   ## ---------------------------------------------------------------------
@@ -174,7 +177,7 @@ build_vh_mosaic <- function(
     terra::sprc(date_rasters),
     fun = "mean"
   )
-  
+  gc()
   return(
     list(
       raster = final_raster,
@@ -236,6 +239,8 @@ apply_filter_by_orbit <- function(rasters, orbits){
     
     # multiplica cada imagem já suavizada pelo "outcore"
     filtered[idx] <- lapply(smooth_col, function(sm) sm * outcore)
+    rm(input_col, smooth_col, ratio_col, outcore)
+    gc()
   }
   filtered
 }
@@ -254,250 +259,223 @@ stretch_vh <- function(r, upper, lower){
   ((r - lower) / (upper - lower)) * 254
 }
 
+# Função auxiliar: gera o bloco de texto de um período
+make_period_report <- function(title, mosaic) {
+  c(
+    sprintf("---------------- %s ----------------", title),
+    paste("Reference date:", mosaic$target_date),
+    paste("Dates used:", paste(mosaic$dates, collapse = ", ")),
+    paste("Number of dates:", mosaic$n_dates),
+    paste("Number of scenes:", mosaic$n_scenes),
+    "",
+    "Scenes:",
+    paste("  -", mosaic$scenes),
+    ""
+  )
+}
+
+
 #===============================================================================
 # BUILD THE THREE TEMPORAL MOSAICS
 #===============================================================================
 
+results <- vector("list", length(tiles))
+names(results) <- tiles
 
-for(tile in tiles){
+ind <- 0
+for (tile in tiles) {
   
-  cat("Starting ", tile, "\n")
+  ind <- ind + 1
   
-  class_dir <- "data/class"
-  
-  radar_dir <- file.path(class_dir, tile, "radar_image")
-  dir.create(radar_dir, showWarnings = FALSE)
-  pasta <- paste0(radar_dir, )
+  results[tile] <- list(
+    tryCatch(
+      {
+        cat("Starting ", tile, "\n",
+            "Scene ", ind, "/", length(tiles), "\n")
+        
+        class_dir <- "data/class"
+        
+        radar_dir <- file.path(class_dir, tile, "radar_image")
+        dir.create(radar_dir, showWarnings = FALSE, recursive = TRUE)
+        
+        bbox <- sits::sits_tiles_to_roi(tiles = tile,
+                                        grid_system = "BDC_SM_V2")
+        
+        # ---------------- CURRENT ----------------
+        message("Current image")
+        vh_atual <- build_vh_mosaic(
+          target_date = as.character(ref_date),
+          bbox = bbox
+        )
+        
+        if (is.null(vh_atual))
+          stop("Current mosaic could not be created.")
+        
+        vh_atual_img <- to_db(vh_atual$raster)
+        report_atual <- make_period_report("CURRENT", vh_atual)
+        data_ref <- base::sort(vh_atual$dates, decreasing = TRUE)[1]
+        
+        rm(vh_atual)
+        
+        vh_atual_img <- stretch_vh(vh_atual_img, upper, lower)
+        vh_atual_10m <- project(vh_atual_img,
+                                crs,
+                                res = 10,
+                                method = method,
+                                threads = TRUE)
+        rm(vh_atual_img)
+        gc()
+        
+        # ---------------- 4 MONTHS ----------------
+        message("4 months")
+        vh_4m <- build_vh_mosaic(
+          target_date = data_inicio_4m,
+          bbox = bbox
+        )
+        
+        if (is.null(vh_4m))
+          stop("4-month mosaic could not be created.")
+        
+        vh_4m_img <- to_db(vh_4m$raster)
+        report_4m <- make_period_report("4 MONTHS", vh_4m)
+        
+        rm(vh_4m)
+        
+        vh_4m_img <- stretch_vh(vh_4m_img, upper, lower)
+        vh_4m_10m <- project(vh_4m_img,
+                             vh_atual_10m,
+                             method = method,
+                             threads = TRUE)
+        rm(vh_4m_img)
+        gc()
+        
+        # ---------------- 8 MONTHS ----------------
+        message("8 months")
+        vh_8m <- build_vh_mosaic(
+          target_date = data_inicio_8m,
+          bbox = bbox
+        )
+        
+        if (is.null(vh_8m))
+          stop("8-month mosaic could not be created.")
+        
+        vh_8m_img <- to_db(vh_8m$raster)
+        report_8m <- make_period_report("8 MONTHS", vh_8m)
+        
+        rm(vh_8m)
+        gc()
+        
+        vh_8m_img <- stretch_vh(vh_8m_img, upper, lower)
+        vh_8m_10m <- project(vh_8m_img,
+                             vh_atual_10m,
+                             method = method,
+                             threads = TRUE)
+        rm(vh_8m_img)
+        gc()
+        
+        #=======================================================================
+        # STACK RGB
+        #=======================================================================
+        
+        temporal_rgb_10m <- c(vh_atual_10m,
+                              vh_4m_10m,
+                              vh_8m_10m)
+        
+        rm(vh_atual_10m,
+           vh_4m_10m,
+           vh_8m_10m)
+        gc()
+        
+        temporal_rgb_10m <- project(temporal_rgb_10m,
+                                    "EPSG:4674",
+                                    method = method,
+                                    threads = TRUE)
+        
+        names(temporal_rgb_10m) <- c(
+          "VH_Current",
+          "VH_4Months",
+          "VH_8Months"
+        )
+        
+        #=======================================================================
+        # EXPORT
+        #=======================================================================
+        
+        name_export <- sprintf("%s/S1_%s_VH_R07G04B01_mean-temporal_%s.tif",
+                               radar_dir, tile, data_ref)
+        
+        terra::writeRaster(temporal_rgb_10m,
+                           filename = name_export,
+                           datatype = "INT1U",
+                           overwrite = TRUE,
+                           gdal = c("COMPRESS=DEFLATE",
+                                    "PREDICTOR=2",
+                                    "ZLEVEL=9"),
+                           progress = TRUE)
+        
+        rm(temporal_rgb_10m)
+        gc()
+        
+        #=======================================================================
+        # Sentinel-1 Temporal RGB Report
+        #=======================================================================
+        
+        report_header <- c(
+          "===================================================",
+          "Sentinel-1 Temporal RGB Report",
+          "===================================================",
+          "",
+          paste("Tile:", tile),
+          paste("Processing date:", Sys.time()),
+          "",
+          ""
+        )
+        
+        report_final <- c(
+          report_header,
+          report_atual,
+          report_4m,
+          report_8m
+        )
+        
+        # somente o report final é salvo
+        writeLines(
+          report_final,
+          sprintf("%s/S1_%s_VH_R07G04B01_mean-temporal_%s_report.txt",
+                  radar_dir, tile, ano)
+        )
+        
+        rm(report_atual, report_4m, report_8m, report_header, report_final)
+        gc()
+        
+        cat(tile, " Finished\n")
+        
+        # valor de sucesso (não-NULL) para o resumo final
+        name_export
+      },
+      error = function(e) {
+        message("ERROR in tile ", tile, ": ", conditionMessage(e))
+        NULL
+      },
+      finally = {
+        gc()
+      }
+    )
+  )
+}
 
-  bbox <- sits::sits_tiles_to_roi(tiles = tile,
-                                  grid_system = "BDC_SM_V2")
-   
-  message("Current image")
-  vh_atual <- build_vh_mosaic(
-    target_date = as.character(ref_date),
-    bbox = bbox
-  )
-  
-  if(is.null(vh_atual))
-    stop("Current mosaic could not be created.")
-  
-  vh_atual_img <- to_db(vh_atual$raster)
-  vh_atual_img <- stretch_vh(vh_atual_img, upper, lower)
-  vh_atual_10m <- project(vh_atual_img,
-                          crs,
-                          res = 10,
-                          method = method,
-                          threads = TRUE)
-  
-  gc()
-  
-  message("4 months")
-  vh_4m <- build_vh_mosaic(
-    target_date = data_inicio_4m,
-    bbox = bbox
-  )
-  
-  if(is.null(vh_4m))
-    stop("4-month mosaic could not be created.")
-  
-  vh_4m_img <- to_db(vh_4m$raster)
-  vh_4m_img <- stretch_vh(vh_4m_img, upper, lower)
-  vh_4m_10m <- project(vh_4m_img,
-                       vh_atual_10m,
-                       method = method,
-                       threads = TRUE)
-  
-  gc()
-  
-  message("8 months")
-  vh_8m <- build_vh_mosaic(
-    target_date = data_inicio_8m,
-    bbox = bbox
-  )
-  
-  if(is.null(vh_8m))
-    stop("8-month mosaic could not be created.")
-  
-  vh_8m_img <- to_db(vh_8m$raster)
-  vh_8m_img <- stretch_vh(vh_8m_img, upper, lower)
-  vh_8m_10m <- project(vh_8m_img,
-                       vh_atual_10m,
-                       method = method,
-                       threads = TRUE)
-  
-  gc()
-  
-#===============================================================================
-# STACK RGB
-#===============================================================================
-  
-  temporal_rgb_10m <- c(vh_atual_10m,
-                        vh_4m_10m,
-                        vh_8m_10m
-                        )
-  
-  temporal_rgb_10m <- project(temporal_rgb_10m,
-                              "EPSG:4674",
-                              method = method,
-                              threads = TRUE)
-  
-  names(temporal_rgb_10m) <- c(
-    "VH_Current",
-    "VH_4Months",
-    "VH_8Months"
-  )
-  
-  plotRGB(temporal_rgb_10m)
-  
-#===============================================================================
-# Sentinel-1 Temporal RGB Report",
-#===============================================================================
-  report <- c(
-    
-    "===================================================",
-    "Sentinel-1 Temporal RGB Report",
-    "===================================================",
-    "",
-    paste("Tile:", tile),
-    paste("Processing date:", Sys.time()),
-    "",
-    ""
-  )
-  
-  report <- c(
-    report,
-    
-    "---------------- CURRENT ----------------",
-    paste(
-      "Reference date:",
-      vh_atual$target_date
-    ),
-    paste(
-      "Dates used:",
-      paste(vh_atual$dates, collapse=", ")
-    ),
-    paste(
-      "Number of dates:",
-      vh_atual$n_dates
-    ),
-    paste(
-      "Number of scenes:",
-      vh_atual$n_scenes
-    ),
-    "",
-    "Scenes:"
-  )
-  report <- c(
-    report,
-    paste("  -", vh_atual$scenes),
-    ""
-  )
-  
-  report <- c(
-    
-    report,
-    
-    "---------------- 4 MONTHS ----------------",
-    
-    paste(
-      "Reference date:",
-      vh_4m$target_date
-    ),
-    
-    paste(
-      "Dates used:",
-      paste(vh_4m$dates, collapse=", ")
-    ),
-    
-    paste(
-      "Number of dates:",
-      vh_4m$n_dates
-    ),
-    
-    paste(
-      "Number of scenes:",
-      vh_4m$n_scenes
-    ),
-    
-    "",
-    "Scenes:"
-  )
-  
-  report <- c(
-    report,
-    paste("  -", vh_4m$scenes),
-    ""
-  )
-  
-  report <- c(
-    
-    report,
-    
-    "---------------- 8 MONTHS ----------------",
-    
-    paste(
-      "Reference date:",
-      vh_8m$target_date
-    ),
-    
-    paste(
-      "Dates used:",
-      paste(vh_8m$dates, collapse=", ")
-    ),
-    
-    paste(
-      "Number of dates:",
-      vh_8m$n_dates
-    ),
-    
-    paste(
-      "Number of scenes:",
-      vh_8m$n_scenes
-    ),
-    
-    "",
-    "Scenes:"
-  )
-  
-  report <- c(
-    report,
-    paste("  -", vh_8m$scenes)
-  )
-  
-  writeLines(report,
-            sprintf("%s/S1_%s_VH_R07G04B01_mean-temporal_%s_report.txt",
-                                    radar_dir, tile, ano))
-  
-#===============================================================================
-# EXPORT
-#===============================================================================
-  
-  data_ref <- base::sort(vh_atual$dates, decreasing = TRUE)[1]
-  
-  name_export <- sprintf("%s/S1_%s_VH_R07G04B01_mean-temporal_%s.tif",
-                         radar_dir, tile, data_ref)
-  
-  terra::writeRaster(temporal_rgb_10m,
-                     filename = name_export,
-                     datatype = "INT1U",
-                     overwrite = TRUE,
-                     gdal = c("COMPRESS=DEFLATE",
-                              "PREDICTOR=2",
-                              "ZLEVEL=9"),
-                     progress = TRUE)
-  
-  
-  rm(temporal_rgb_10m,
-     vh_atual_10m,
-     vh_4m_10m,
-     vh_8m_10m,
-     vh_atual_img,
-     vh_4m_img,
-     vh_8m_img,
-     vh_atual,
-     vh_4m,
-     vh_8m)
-  
-  gc()
-  cat(tile, " Finished\n")
+# ============================================================
+# 6. Final summary
+# ============================================================
+
+success <- names(results)[!vapply(results, is.null, logical(1))]
+failure <- names(results)[vapply(results, is.null, logical(1))]
+
+message("\n========== PROCESSING SUMMARY ==========")
+message("Total tiles: ", length(tiles))
+message("Success (", length(success), "): ", paste(success, collapse = ", "))
+if (length(failure) > 0) {
+  message("Failure (", length(failure), "): ", paste(failure, collapse = ", "))
+} else {
+  message("No faults recorded.")
 }
