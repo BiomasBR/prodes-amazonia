@@ -27,34 +27,14 @@ TILES = [
 '002015',
 '005012',
 '005013',
-'006008',
-'006010',
-'006011',
-'007003',
-'007004',
-'007005',
-'007011',
-'008004',
-'008012',
-'009005',
-'009006',
-'009011',
-'011001',
-'011007',
-'011008',
-'011009',
-'012006',
-'013007',
-'014008',
-'015000',
 '031008'
 ]
 
 # Data de cada tipo de nuvem, valendo para TODOS os tiles.
 # Aceita "AAAA-MM-DD" ou intervalo "AAAA-MM-DD/AAAA-MM-DD".
 DATAS = {
-    "primaria":   "2026-07-28/2026-07-30",             
-    "secundaria": "2026-08-13/2026-08-15",
+    "primaria":   "2026-07-28/2026-07-28",             
+    "secundaria": "2026-08-13/2026-08-13",
 }
 
 # Exceções opcionais por tile (sobrescrevem DATAS só nas chaves informadas).
