@@ -8,37 +8,35 @@ library(dplyr)
 # Define parameters and paths
 # ============================================================
 
-tile <- "012014"
-version <- "rf-1y-all-samples-new-pol-avg-false-pixel-mode"
+ref_path <- "data/raw/auxiliary/prodes_2026_piori.gpkg"
 
-prodes_dir  <- "data/raw/prodes-2025"
-class_dir   <- file.path("data/class", tile, "post_processed")
-
-# List the classified polygons 
-class_files <- list.files(
-  class_dir,
-  pattern    = paste0("^class-post-processed_", tile, "_[^_]+_[^_]+_", version, "\\.gpkg$"),
-  full.names = TRUE,
-  recursive  = TRUE
+tiles <- c("012014", "007016", "022009", "015013")
+versions_list <- list("012014" = c("tcnn-2y-eco-1-rr-48d-vsits2-mean",
+                                   "tcnn-2y-eco-2-ac-48d-vsits2-mean",
+                                   "tcnn-2y-eco-4-pa-48d-vsits2-mean",
+                                   "tcnn-2y-eco-3-mt-48d-vsits2-mean"),
+                      
+                      "007016" = c("tcnn-2y-eco-1-rr-48d-vsits2-mean",
+                                   "tcnn-2y-eco-3-mt-48d-vsits2-mean",
+                                   "tcnn-2y-eco-2-ac-48d-vsits2-mean",                               
+                                   "tcnn-2y-eco-4-pa-48d-vsits2-mean"),
+                      
+                      "022009" = c("tcnn-2y-eco-1-rr-46d-vsits2-mean",
+                                   "tcnn-2y-eco-2-ac-46d-vsits2-mean",
+                                   "tcnn-2y-eco-3-mt-46d-vsits2-mean",
+                                   "tcnn-2y-eco-4-pa-46d-vsits2-mean"),
+                      
+                      "015003" = c("tcnn-2y-eco-1-rr-46d-vsits2-mean",
+                                   "tcnn-2y-eco-2-ac-46d-vsits2-mean",
+                                   "tcnn-2y-eco-3-mt-46d-vsits2-mean",
+                                   "tcnn-2y-eco-4-pa-46d-vsits2-mean")
 )
-
-# List the PRODES reference polygons 
-ref_prodes <- list.files(
-  prodes_dir,
-  pattern    = paste0(".*", tile, ".*\\.gpkg$"),
-  full.names = TRUE,
-  recursive  = TRUE
-)
-
-# Verify that at least one file was found
-if (length(ref_prodes) == 0) stop("No PRODES reference file found.")
-if (length(class_files) == 0) stop("No classification file found.")
 
 # ============================================================
 # Define intersection metrics function (with polygon disaggregation)
 # ============================================================
 
-compute_metrics <- function(ref_prodes, class_files, overwrite = TRUE) {
+compute_metrics <- function(pol_ref, class_files, tile_id = "PRODES_Metrics", overwrite = TRUE) {
   
   old_s2_state <- sf::sf_use_s2()
   sf::sf_use_s2(FALSE) # Disable spherical geometry (S2), use planar (GEOS)
@@ -67,14 +65,10 @@ compute_metrics <- function(ref_prodes, class_files, overwrite = TRUE) {
     return(layer)
   }
   
-  # --- Load PRODES (Reference) - keep original geometry types initially ----
-  if (length(ref_prodes) > 1)
-    warning(sprintf("[PRODES] %d files found; using the first one.", length(ref_prodes)))
-  pol_ref <- safe_read_sf(ref_prodes[1], "PRODES", extract_polygons = FALSE)
+  # --- Clean & Disaggregate PRODES (Reference) --------------------------------
+  pol_ref <- sf::st_make_valid(pol_ref)
+  pol_ref <- pol_ref[sf::st_is_valid(pol_ref) & !sf::st_is_empty(pol_ref), ]
   
-  # --- NEW STEP: Disaggregate MULTIPOLYGON into individual POLYGONs ----------
-  # This ensures that each reference object is a single polygon,
-  # allowing meaningful per-polygon metrics.
   geom_types_ref <- unique(as.character(sf::st_geometry_type(pol_ref)))
   if (any(grepl("MULTI|COLLECTION", geom_types_ref))) {
     pol_ref <- sf::st_cast(pol_ref, "POLYGON")
@@ -83,7 +77,7 @@ compute_metrics <- function(ref_prodes, class_files, overwrite = TRUE) {
   } else {
     message(sprintf("PRODES already contains %d simple polygons.", nrow(pol_ref)))
   }
-  
+
   # --- Load SITS classification (extract polygons) ---
   if (length(class_files) > 1)
     warning(sprintf("[SITS] %d files found; using the first one.", length(class_files)))
@@ -96,7 +90,7 @@ compute_metrics <- function(ref_prodes, class_files, overwrite = TRUE) {
   }
   
   # --- Project to a equal-area coordinate system for correct area calculation ----
-  equal_area_crs <- "+proj=aea +lat_1=-5 +lat_2=-42 +lat_0=-32 +lon_0=-60 +x_0=0 +y_0=0 +ellps=aust_SA +units=m +no_defs"
+  equal_area_crs <- "PROJCRS[\"unknown\",\n    BASEGEOGCRS[\"unknown\",\n        DATUM[\"Unknown based on GRS80 ellipsoid\",\n            ELLIPSOID[\"GRS 1980\",6378137,298.257222101004,\n                LENGTHUNIT[\"metre\",1],\n                ID[\"EPSG\",7019]]],\n        PRIMEM[\"Greenwich\",0,\n            ANGLEUNIT[\"degree\",0.0174532925199433,\n                ID[\"EPSG\",9122]]]],\n    CONVERSION[\"Albers Equal Area\",\n        METHOD[\"Albers Equal Area\",\n            ID[\"EPSG\",9822]],\n        PARAMETER[\"Latitude of false origin\",-12,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8821]],\n        PARAMETER[\"Longitude of false origin\",-54,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8822]],\n        PARAMETER[\"Latitude of 1st standard parallel\",-2,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8823]],\n        PARAMETER[\"Latitude of 2nd standard parallel\",-22,\n            ANGLEUNIT[\"degree\",0.0174532925199433],\n            ID[\"EPSG\",8824]],\n        PARAMETER[\"Easting at false origin\",5000000,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8826]],\n        PARAMETER[\"Northing at false origin\",10000000,\n            LENGTHUNIT[\"metre\",1],\n            ID[\"EPSG\",8827]]],\n    CS[Cartesian,2],\n        AXIS[\"easting\",east,\n            ORDER[1],\n            LENGTHUNIT[\"metre\",1,\n                ID[\"EPSG\",9001]]],\n        AXIS[\"northing\",north,\n            ORDER[2],\n            LENGTHUNIT[\"metre\",1,\n                ID[\"EPSG\",9001]]]]"
   
   pol_ref_proj <- sf::st_transform(pol_ref, equal_area_crs)
   pol_class_proj <- sf::st_transform(pol_class, equal_area_crs)
@@ -186,7 +180,7 @@ compute_metrics <- function(ref_prodes, class_files, overwrite = TRUE) {
   metrics_filename <- sub("^class", "metrics", class_filename)
   
   wb <- openxlsx::createWorkbook()
-  sheet_name <- tools::file_path_sans_ext(basename(ref_prodes[1]))
+  sheet_name <- paste0("prodes_2025_", tile_id)
   openxlsx::addWorksheet(wb, sheet_name)
   openxlsx::writeData(wb, sheet_name, r_df, rowNames = TRUE)
   
@@ -216,10 +210,34 @@ compute_metrics <- function(ref_prodes, class_files, overwrite = TRUE) {
   ))
 }
 
-# ============================================================
-# Use intersection metrics function
-# ============================================================
-metrics_results <- compute_metrics(
-  ref_prodes  = ref_prodes,
-  class_files = class_files,
-  overwrite   = TRUE)
+for (tile in tiles){
+  versions <- versions_list[[tile]]
+  
+  query <- sprintf("SELECT * FROM prodes_2026_piori WHERE tile = '%s'", tile)
+  
+  pol_ref <- read_sf(ref_path, query = query)
+  
+  for (version in versions){
+    # List the classified polygons
+    class_dir   <- file.path("data/class", tile, "post_processed", version)
+    
+    class_files <- list.files(
+      class_dir,
+      pattern    = paste0("rascunho_sits_t", tile, "\\.gpkg$"),
+      full.names = TRUE,
+    )
+    
+    # Verify that at least one file was found
+    #if (length(ref_prodes) == 0) stop("No PRODES reference file found.")
+    if (length(class_files) == 0) stop("No classification file found.")
+    
+    metrics_results <- compute_metrics(
+      pol_ref     = pol_ref,
+      class_files = class_files,
+      tile_id     = tile,
+      overwrite   = TRUE
+    )
+    
+  }
+}
+
